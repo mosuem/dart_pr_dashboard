@@ -2,6 +2,7 @@
 
 import 'dart:async';
 import 'dart:convert';
+import 'dart:io';
 
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_database/firebase_database.dart';
@@ -18,37 +19,42 @@ late final Map<RepositorySlug, List<PullRequest>> prs;
 late final List<User> googlers;
 
 Future<void> main() async {
-  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+  // await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
   await readData();
   runApp(const MyApp());
 }
 
 Future<void> readData() async {
-  final ref = FirebaseDatabase.instance.ref();
-  final snapshot = await ref.child('pullrequests/data').get();
-  if (snapshot.exists) {
-    final value = snapshot.value as Map<String, dynamic>;
-    prs = value.map(
-      (k, v) => MapEntry(
-        RepositorySlug.full(k.replaceFirst(':', '/')),
-        (v as Map)
-            .values
-            .map((e) => PullRequest.fromJson(jsonDecode(e)))
-            .toList(),
-      ),
-    );
-  } else {
-    print('No data available.');
-  }
+  // final ref = FirebaseDatabase.instance.ref();
+  // final snapshot = await ref.child('pullrequests/data').get();
+  // if (snapshot.exists) {
+  //   final value = snapshot.value as Map<String, dynamic>;
+  //   prs = value.map(
+  //     (k, v) => MapEntry(
+  //       RepositorySlug.full(k.replaceFirst(':', '/')),
+  //       (v as Map)
+  //           .values
+  //           .map((e) => PullRequest.fromJson(jsonDecode(e)))
+  //           .toList(),
+  //     ),
+  //   );
+  // } else {
+  //   print('No data available.');
+  // }
 
-  final snapshot2 = await ref.child('googlers').get();
-  if (snapshot2.exists) {
-    final jsonEncoded = snapshot2.value as String;
-    googlers =
-        (jsonDecode(jsonEncoded) as List).map((e) => User.fromJson(e)).toList();
-  } else {
-    print('No data available.');
-  }
+  // final snapshot2 = await ref.child('googlers').get();
+  // if (snapshot2.exists) {
+  //   final jsonEncoded = snapshot2.value as String;
+  //   googlers =
+  //       (jsonDecode(jsonEncoded) as List).map((e) => User.fromJson(e)).toList();
+  // } else {
+  //   print('No data available.');
+  // }
+  final readAsStringSync = File('tools/repodata.json').readAsStringSync();
+  final Map jsonDecoded = jsonDecode(readAsStringSync);
+  prs = jsonDecoded.map((k, v) => MapEntry(RepositorySlug.full(k),
+      (v as List).map((e) => PullRequest.fromJson(e)).toList()));
+  googlers = [];
 }
 
 class MyApp extends StatelessWidget {

@@ -1,38 +1,51 @@
 import 'package:flutter/material.dart';
 
-class FlexTable extends StatefulWidget {
-  final List<Widget> headers;
-  final List<FlexRow> rows;
-  const FlexTable({super.key, required this.headers, required this.rows});
+class FlexTable<T extends Object> extends StatefulWidget {
+  final List<String> titles;
+  final List<Widget Function(T o)> headers;
+  final List<T> rows;
+  const FlexTable({
+    super.key,
+    required this.headers,
+    required this.rows,
+    required this.titles,
+    required int sorted,
+    required Future<bool> Function(dynamic pr) onTap,
+  });
 
   @override
-  State<FlexTable> createState() => _FlexTableState();
+  State<FlexTable> createState() => _FlexTableState<T>();
 }
 
-class _FlexTableState extends State<FlexTable> {
+class _FlexTableState<T extends Object> extends State<FlexTable<T>> {
+  List<Widget> transform(T data) {
+    return List.generate(
+        widget.headers.length, (index) => widget.headers[index](data));
+  }
+
   @override
   Widget build(BuildContext context) {
-    return Column(
-      children: [
-        Row(children: widget.headers),
-        Expanded(
-          child: ListView.separated(
-            itemBuilder: (context, index) => widget.rows[index],
-            separatorBuilder: (context, index) => const Divider(),
-            itemCount: widget.rows.length,
-          ),
-        ),
-      ],
+    return ListView.separated(
+      itemBuilder: (context, index) {
+        if (index == 0) {
+          return FlexRow(children: widget.titles.map((e) => Text(e)).toList());
+        }
+        return FlexRow(children: transform(widget.rows[index - 1]));
+      },
+      separatorBuilder: (context, index) => const Divider(),
+      itemCount: widget.rows.length + 1,
     );
   }
 }
 
-class FlexRow extends StatelessWidget {
+class FlexRow<T extends Object> extends StatelessWidget {
   final List<Widget> children;
   const FlexRow({super.key, required this.children});
 
   @override
   Widget build(BuildContext context) {
-    return Row(children: children);
+    return Row(
+      children: children.map((e) => Expanded(child: e)).toList(),
+    );
   }
 }

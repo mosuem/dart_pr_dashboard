@@ -1,3 +1,4 @@
+import 'package:dart_pr_dashboard/src/table.dart';
 import 'package:dashboard_ui/ui/table.dart';
 import 'package:flutter/material.dart';
 import 'package:github/github.dart';
@@ -32,7 +33,7 @@ class _PullRequestTableState extends State<PullRequestTable> {
         (pr) => pr.labels,
         (value) => value.map((e) => "'${e.name}'").join(', '),
         (a, b) => a.length.compareTo(b.length),
-        (context, pr, out) => Wrap(
+        (pr) => Wrap(
             children: (pr.labels ?? [])
                 .map((e) => Chip(
                       backgroundColor: Color(
@@ -62,23 +63,16 @@ class _PullRequestTableState extends State<PullRequestTable> {
           stream: widget.pullRequests,
           builder: (context, snapshot) {
             if (!snapshot.hasData) return const CircularProgressIndicator();
-            return VTable<PullRequest>(
-              startsSorted: true,
-              supportsSelection: true,
-              onDoubleTap: (pr) async =>
-                  await launchUrl(Uri.parse(pr.htmlUrl!)),
-              columns: columns
-                  .map((column) => VTableColumn<PullRequest>(
-                        width: column.width,
-                        grow: column.grow,
-                        alignment: Alignment.centerRight,
-                        label: column.title,
-                        transformFunction: column.transformFunction,
-                        compareFunction: column.compareFunction,
-                        renderFunction: column.renderFunction,
-                      ))
-                  .toList(),
-              items: snapshot.data!,
+            return FlexTable<PullRequest>(
+              sorted: 3,
+              onTap: (pr) async => await launchUrl(Uri.parse(pr.htmlUrl!)),
+              titles: columns.map((e) => e.title).toList(),
+              headers: columns.map((column) {
+                return (PullRequest pr) =>
+                    column.renderFunction?.call(pr) ??
+                    Text(column.transformFunction(pr));
+              }).toList(),
+              rows: snapshot.data!,
             );
           }),
     );
@@ -90,8 +84,7 @@ class PrColumn<T> {
   final T? Function(PullRequest pr) valueFunction;
   final String Function(T value)? renderer;
   final int Function(T a, T b)? comparator;
-  final Widget Function(BuildContext context, PullRequest pr, String out)?
-      renderFunction;
+  final Widget Function(PullRequest pr)? renderFunction;
 
   PrColumn(
     this.title,
