@@ -200,7 +200,8 @@ class HeaderRow<T extends Object> extends StatelessWidget {
                   Padding(
                     padding: const EdgeInsets.all(8.0),
                     child: Icon(
-                        isAscending ? Icons.expand_more : Icons.expand_less),
+                      isAscending ? Icons.expand_more : Icons.expand_less,
+                    ),
                   ),
               ],
             ),
