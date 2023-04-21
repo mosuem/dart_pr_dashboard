@@ -1,8 +1,7 @@
+import 'package:dart_pr_dashboard/src/misc.dart';
 import 'package:dart_pr_dashboard/src/table.dart';
-import 'package:dashboard_ui/ui/table.dart';
 import 'package:flutter/material.dart';
 import 'package:github/github.dart';
-import 'package:dart_pr_dashboard/src/misc.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 class PullRequestTable extends StatefulWidget {
@@ -23,31 +22,55 @@ class _PullRequestTableState extends State<PullRequestTable> {
   @override
   Widget build(BuildContext context) {
     final columns = [
-      PrColumn('repo', (pr) => pr.base?.repo?.slug().name),
-      PrColumn('number', (pr) => pr.number),
-      PrColumn('title', (pr) => pr.title),
-      PrColumn('created_at', (pr) => pr.createdAt, daysSince),
-      PrColumn('updated_at', (pr) => pr.updatedAt, daysSince),
-      PrColumn(
-        'labels',
-        (pr) => pr.labels,
-        (value) => value.map((e) => "'${e.name}'").join(', '),
-        (a, b) => a.length.compareTo(b.length),
-        (pr) => Wrap(
-            children: (pr.labels ?? [])
-                .map((e) => Chip(
-                      backgroundColor: Color(
-                        int.parse('99${e.color}', radix: 16),
-                      ),
-                      label: Text(e.name),
-                    ))
-                .toList()),
+      FlexColumn(
+        title: 'repo',
+        valueFunction: (PullRequest pr) => pr.base?.repo?.slug().name,
       ),
-      PrColumn('state', (pr) => pr.state),
-      PrColumn('author', (pr) => formatUsername(pr.user, widget.googlers)),
-      PrColumn(
-        'reviewers',
-        (pr) => pr.requestedReviewers
+      FlexColumn(
+          title: 'number',
+          valueFunction: (PullRequest pr) => pr.number,
+          flex: 5),
+      FlexColumn(
+        title: 'title',
+        valueFunction: (PullRequest pr) => pr.title,
+        flex: 20,
+      ),
+      FlexColumn(
+        title: 'created_at',
+        valueFunction: (PullRequest pr) => pr.createdAt,
+        renderer: daysSince,
+        flex: 5,
+        initiallySort: true,
+      ),
+      FlexColumn(
+        title: 'updated_at',
+        valueFunction: (PullRequest pr) => pr.updatedAt,
+        renderer: daysSince,
+        flex: 5,
+      ),
+      FlexColumn(
+        title: 'labels',
+        valueFunction: (PullRequest pr) => pr.labels,
+        renderer: (value) => value.map((e) => "'${e.name}'").join(', '),
+        comparator: (a, b) => a.length.compareTo(b.length),
+        renderFunction: (PullRequest pr) => Wrap(
+          children: (pr.labels ?? [])
+              .map((e) => Chip(
+                    backgroundColor: Color(
+                      int.parse('99${e.color}', radix: 16),
+                    ),
+                    label: Text(e.name),
+                  ))
+              .toList(),
+        ),
+      ),
+      FlexColumn(
+          title: 'author',
+          valueFunction: (PullRequest pr) =>
+              formatUsername(pr.user, widget.googlers)),
+      FlexColumn(
+        title: 'reviewers',
+        valueFunction: (PullRequest pr) => pr.requestedReviewers
             ?.map(
               (reviewer) => formatUsername(
                 reviewer,
@@ -56,62 +79,22 @@ class _PullRequestTableState extends State<PullRequestTable> {
             )
             .join(', '),
       ),
-      PrColumn('author_association', (pr) => pr.authorAssociation),
+      FlexColumn(
+        title: 'author_association',
+        valueFunction: (PullRequest pr) => pr.authorAssociation,
+      ),
+      FlexColumn(
+        title: 'state',
+        valueFunction: (PullRequest pr) => pr.state,
+        flex: 5,
+      ),
     ];
     return Expanded(
-      child: StreamBuilder<List<PullRequest>>(
-          stream: widget.pullRequests,
-          builder: (context, snapshot) {
-            if (!snapshot.hasData) return const CircularProgressIndicator();
-            return FlexTable<PullRequest>(
-              sorted: 3,
-              onTap: (pr) async => await launchUrl(Uri.parse(pr.htmlUrl!)),
-              titles: columns.map((e) => e.title).toList(),
-              headers: columns.map((column) {
-                return (PullRequest pr) =>
-                    column.renderFunction?.call(pr) ??
-                    Text(column.transformFunction(pr));
-              }).toList(),
-              rows: snapshot.data!,
-            );
-          }),
+      child: FlexTable<PullRequest>(
+        onTap: (pr) async => await launchUrl(Uri.parse(pr.htmlUrl!)),
+        columns: columns,
+        rowStream: widget.pullRequests,
+      ),
     );
-  }
-}
-
-class PrColumn<T> {
-  final String title;
-  final T? Function(PullRequest pr) valueFunction;
-  final String Function(T value)? renderer;
-  final int Function(T a, T b)? comparator;
-  final Widget Function(PullRequest pr)? renderFunction;
-
-  PrColumn(
-    this.title,
-    this.valueFunction, [
-    this.renderer,
-    this.comparator,
-    this.renderFunction,
-  ]);
-
-  int get width => T is DateTime ? 10 : 200;
-  double get grow => T is DateTime ? 0.1 : 0.5;
-
-  String transformFunction(PullRequest pr) {
-    final v = valueFunction(pr);
-    if (v == null) return '';
-    return renderer != null ? renderer!(v) : v.toString();
-  }
-
-  int compareFunction(PullRequest a, PullRequest b) {
-    final va = valueFunction(a);
-    final vb = valueFunction(b);
-    if (va == null) return -1;
-    if (vb == null) return 1;
-    if (comparator != null) {
-      return comparator!(va, vb);
-    } else {
-      return (va as Comparable).compareTo(vb);
-    }
   }
 }
