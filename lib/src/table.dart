@@ -6,11 +6,13 @@ class FlexTable<T extends Object> extends StatefulWidget {
   final Stream<List<T>> rowStream;
   final internalRowStream = StreamController<List<T>>();
 
+  final Future<bool> Function(T pr) onTap;
+
   FlexTable({
     super.key,
     required this.columns,
     required this.rowStream,
-    required Future<bool> Function(T pr) onTap,
+    required this.onTap,
   });
 
   @override
@@ -64,6 +66,7 @@ class _FlexTableState<T extends Object> extends State<FlexTable<T>> {
                   }
                   return FlexRow(
                     columns: widget.columns,
+                    onTap: () => widget.onTap(rows[index - 1]),
                     children: transform(rows[index - 1]),
                   );
                 },
@@ -140,20 +143,25 @@ class FlexColumn<T extends Object, S extends Object> {
 class FlexRow<T extends Object> extends StatelessWidget {
   final List<Widget> children;
   final List<FlexColumn> columns;
+  final void Function() onTap;
   const FlexRow({
     super.key,
     required this.children,
     required this.columns,
+    required this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-      children: List.generate(
-        children.length,
-        (index) => Expanded(
-          flex: columns[index].flex,
-          child: children[index],
+    return InkWell(
+      onTap: onTap,
+      child: Row(
+        children: List.generate(
+          children.length,
+          (index) => Expanded(
+            flex: columns[index].flex,
+            child: children[index],
+          ),
         ),
       ),
     );
