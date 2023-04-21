@@ -148,7 +148,8 @@ class _MyHomePageState extends State<MyHomePage> {
               children: {
                 'Unlabeled': r'labels:$^',
                 'Without reviewers': r'reviewers:$^',
-                'Not authored by a Googler': 'author:.*[^$gWithCircle]\$'
+                'Not authored by a Googler': 'author:.*[^$gWithCircle]\$',
+                'Not authored by a bot': r'author:.*(?<!\[bot\])$'
               }
                   .entries
                   .map(
