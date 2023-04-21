@@ -2,14 +2,13 @@
 
 import 'dart:async';
 import 'dart:convert';
-import 'dart:io';
 
+import 'package:dart_pr_dashboard/src/misc.dart';
+import 'package:dart_pr_dashboard/src/pullrequest_table.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter/material.dart';
 import 'package:github/github.dart';
-import 'package:dart_pr_dashboard/src/misc.dart';
-import 'package:dart_pr_dashboard/src/pullrequest_table.dart';
 
 import 'filter.dart';
 import 'firebase_options.dart';
