@@ -38,10 +38,6 @@ dependencies:
   url_launcher: ^6.1.10
   shared_preferences: ^2.1.0
   firebase_core: ^2.9.0
-  dashboard_ui:
-    git:
-      url: https://github.com/devoncarew/ecosystem_ui
-      path: dashboard_ui/
   cloud_firestore: ^4.5.1
   firebase_database: ^10.1.0
   
