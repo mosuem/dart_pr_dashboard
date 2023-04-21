@@ -19,42 +19,44 @@ late final Map<RepositorySlug, List<PullRequest>> prs;
 late final List<User> googlers;
 
 Future<void> main() async {
-  // await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
   await readData();
   runApp(const MyApp());
 }
 
 Future<void> readData() async {
-  // final ref = FirebaseDatabase.instance.ref();
-  // final snapshot = await ref.child('pullrequests/data').get();
-  // if (snapshot.exists) {
-  //   final value = snapshot.value as Map<String, dynamic>;
-  //   prs = value.map(
-  //     (k, v) => MapEntry(
-  //       RepositorySlug.full(k.replaceFirst(':', '/')),
-  //       (v as Map)
-  //           .values
-  //           .map((e) => PullRequest.fromJson(jsonDecode(e)))
-  //           .toList(),
-  //     ),
-  //   );
-  // } else {
-  //   print('No data available.');
-  // }
+  final ref = FirebaseDatabase.instance.ref();
+  final snapshot = await ref.child('pullrequests/data').get();
+  if (snapshot.exists) {
+    final value = snapshot.value as Map<String, dynamic>;
+    prs = value.map(
+      (k, v) => MapEntry(
+        RepositorySlug.full(k.replaceFirst(':', '/')),
+        (v as Map)
+            .values
+            .map((e) => PullRequest.fromJson(jsonDecode(e)))
+            .toList(),
+      ),
+    );
+  } else {
+    print('No data available.');
+  }
 
-  // final snapshot2 = await ref.child('googlers').get();
-  // if (snapshot2.exists) {
-  //   final jsonEncoded = snapshot2.value as String;
-  //   googlers =
-  //       (jsonDecode(jsonEncoded) as List).map((e) => User.fromJson(e)).toList();
-  // } else {
-  //   print('No data available.');
-  // }
-  final readAsStringSync = File('tools/repodata.json').readAsStringSync();
-  final Map jsonDecoded = jsonDecode(readAsStringSync);
-  prs = jsonDecoded.map((k, v) => MapEntry(RepositorySlug.full(k),
-      (v as List).map((e) => PullRequest.fromJson(e)).toList()));
-  googlers = [];
+  final snapshot2 = await ref.child('googlers').get();
+  if (snapshot2.exists) {
+    final jsonEncoded = snapshot2.value as String;
+    googlers =
+        (jsonDecode(jsonEncoded) as List).map((e) => User.fromJson(e)).toList();
+  } else {
+    print('No data available.');
+  }
+
+  // --- For local development
+  // final readAsStringSync = File('tools/repodata.json').readAsStringSync();
+  // final Map jsonDecoded = jsonDecode(readAsStringSync);
+  // prs = jsonDecoded.map((k, v) => MapEntry(RepositorySlug.full(k),
+  //     (v as List).map((e) => PullRequest.fromJson(e)).toList()));
+  // googlers = [];
 }
 
 class MyApp extends StatelessWidget {
@@ -144,32 +146,28 @@ class _MyHomePageState extends State<MyHomePage> {
               ),
             ),
             Row(
-              children: [
-                TextButton(
-                  onPressed: () {
-                    const other = r'reviewers:$^';
-                    if (controller.text.contains(other)) {
-                      controller.text = controller.text.replaceAll(other, '');
-                    } else {
-                      controller.text += ' $other';
-                    }
-                    controller.text = controller.text.trim();
-                  },
-                  child: const Text('Without reviewers'),
-                ),
-                TextButton(
-                  onPressed: () {
-                    const other = 'author:.*[^$gWithCircle]\$';
-                    if (controller.text.contains(other)) {
-                      controller.text = controller.text.replaceAll(other, '');
-                    } else {
-                      controller.text += ' $other';
-                    }
-                    controller.text = controller.text.trim();
-                  },
-                  child: const Text('Not authored by a Googler'),
-                ),
-              ],
+              children: {
+                'Unlabeled': r'labels:$^',
+                'Without reviewers': r'reviewers:$^',
+                'Not authored by a Googler': 'author:.*[^$gWithCircle]\$'
+              }
+                  .entries
+                  .map(
+                    (e) => TextButton(
+                      onPressed: () {
+                        final text = e.value;
+                        if (controller.text.contains(text)) {
+                          controller.text =
+                              controller.text.replaceAll(text, '');
+                        } else {
+                          controller.text += ' $text';
+                        }
+                        controller.text = controller.text.trim();
+                      },
+                      child: Text(e.key),
+                    ),
+                  )
+                  .toList(),
             ),
             PullRequestTable(
               pullRequests: filteredPRsController.stream,
