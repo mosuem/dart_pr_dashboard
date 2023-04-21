@@ -3,12 +3,12 @@ import 'package:dart_pr_dashboard/src/misc.dart';
 
 class SearchFilter {
   final List<User> googlers;
-  final Map<String, SearchMatcher> _filterByColumn;
+  final Map<String, Set<SearchMatcher>> _filterByColumn;
 
   SearchFilter._(this._filterByColumn, this.googlers);
 
   static SearchFilter? fromFilter(String source, List<User> googlers) {
-    final filterByColumn = <String, SearchMatcher>{};
+    final filterByColumn = <String, Set<SearchMatcher>>{};
     final allMatches = searchPattern.allMatches(source);
     try {
       for (final match in allMatches) {
@@ -16,15 +16,18 @@ class SearchFilter {
         final matcher = match[2] ?? match[3];
         if (columnName == null || matcher == null) return null;
         final rangeMatch = rangePattern.matchAsPrefix(matcher);
+        SearchMatcher? searchMatcher;
         if (rangeMatch != null) {
           final min = rangeMatch[1];
           final max = rangeMatch[2];
           if (min != null && max != null) {
-            filterByColumn[columnName] =
-                RangeMatcher(Range(int.parse(min), int.parse(max)));
+            searchMatcher = RangeMatcher(Range(int.parse(min), int.parse(max)));
           }
         } else {
-          filterByColumn[columnName] = RegexMatcher(RegExp(matcher));
+          searchMatcher = RegexMatcher(RegExp(matcher));
+        }
+        if (searchMatcher != null) {
+          filterByColumn.putIfAbsent(columnName, () => {}).add(searchMatcher);
         }
       }
       if (allMatches.isEmpty) return null;
@@ -69,7 +72,7 @@ class SearchFilter {
     return _filterByColumn.entries.every((entry) {
       final match = getMatch(pr, entry.key);
       if (match != null) {
-        return entry.value.hasMatch(match);
+        return entry.value.every((matcher) => matcher.hasMatch(match));
       } else {
         return true;
       }

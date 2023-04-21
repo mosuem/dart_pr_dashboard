@@ -60,8 +60,15 @@ class _FlexTableState<T extends Object> extends State<FlexTable<T>> {
                           sortRows(rows);
                         };
                       }),
-                      children:
-                          widget.columns.map((e) => Text(e.title)).toList(),
+                      children: List.generate(
+                        widget.columns.length,
+                        (index) => Text(
+                          widget.columns[index].title,
+                          style: index == sortedKey
+                              ? const TextStyle(fontWeight: FontWeight.bold)
+                              : null,
+                        ),
+                      ),
                     );
                   }
                   return FlexRow(
