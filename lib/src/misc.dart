@@ -11,8 +11,7 @@ String daysSince(DateTime? dt) {
 
 String formatUsername(User? user, List<User> googlers) {
   final googlerMark = googlers.any((googler) => googler.login == user?.login)
-      ? gWithCircle
+      ? ' ($gWithCircle)'
       : '';
-  final userName = user?.login ?? '';
-  return userName + googlerMark;
+  return '@${user?.login ?? ''}$googlerMark';
 }
