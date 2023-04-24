@@ -1,6 +1,6 @@
 import 'package:github/github.dart';
 
-List<RepositorySlug> repos = [
+List<RepositorySlug> repos = {
   'grpc/grpc-dart',
   'dart-lang/api.dart.dev',
   'dart-lang/dartbug.com',
@@ -111,6 +111,5 @@ List<RepositorySlug> repos = [
   'dart-lang/ecosystem',
   'dart-lang/web',
   'dart-lang/tools',
-  'dart-lang/i18n',
   'dart-lang/native',
-].map((e) => RepositorySlug.full(e)).toList();
+}.map((e) => RepositorySlug.full(e)).toList();
