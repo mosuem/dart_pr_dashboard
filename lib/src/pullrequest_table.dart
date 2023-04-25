@@ -25,7 +25,7 @@ class _PullRequestTableState extends State<PullRequestTable> {
       FlexColumn(
         title: 'PR',
         valueFunction: (PullRequest pr) => pr.title,
-        flex: 20,
+        flex: 22,
       ),
       FlexColumn(
         title: 'Repo',
@@ -45,46 +45,35 @@ class _PullRequestTableState extends State<PullRequestTable> {
         flex: 6,
       ),
       FlexColumn(
+        title: 'Author',
+        valueFunction: (PullRequest pr) {
+          var text = formatUsername(pr.user, widget.googlers);
+          if (pr.authorAssociation != null) {
+            text = '$text\n${pr.authorAssociation!.toLowerCase()}';
+          }
+          return text;
+        },
+      ),
+      FlexColumn(
+        title: 'Reviewers',
+        valueFunction: (PullRequest pr) => pr.requestedReviewers
+            ?.map((reviewer) => formatUsername(reviewer, widget.googlers))
+            .join(', '),
+      ),
+      FlexColumn(
         title: 'Labels',
+        flex: 12,
         valueFunction: (PullRequest pr) => pr.labels,
         renderer: (value) => value.map((e) => "'${e.name}'").join(', '),
         comparator: (a, b) => a.length.compareTo(b.length),
         renderFunction: (PullRequest pr) => Wrap(
-          children: (pr.labels ?? [])
-              .map((e) => Chip(
-                    backgroundColor: Color(
-                      int.parse('99${e.color}', radix: 16),
-                    ),
-                    label: Text(e.name),
-                  ))
-              .toList(),
+          spacing: 4,
+          runSpacing: 4,
+          children: (pr.labels ?? []).map(LabelWidget.new).toList(),
         ),
       ),
-      FlexColumn(
-          title: 'Author',
-          valueFunction: (PullRequest pr) =>
-              formatUsername(pr.user, widget.googlers)),
-      FlexColumn(
-        title: 'Reviewers',
-        valueFunction: (PullRequest pr) => pr.requestedReviewers
-            ?.map(
-              (reviewer) => formatUsername(
-                reviewer,
-                widget.googlers,
-              ),
-            )
-            .join(', '),
-      ),
-      FlexColumn(
-        title: 'Author association',
-        valueFunction: (PullRequest pr) => pr.authorAssociation,
-      ),
-      // FlexColumn(
-      //   title: 'State',
-      //   valueFunction: (PullRequest pr) => pr.state,
-      //   flex: 5,
-      // ),
     ];
+
     return Expanded(
       child: FlexTable<PullRequest>(
         onTap: (pr) async => await launchUrl(Uri.parse(pr.htmlUrl!)),
@@ -94,3 +83,39 @@ class _PullRequestTableState extends State<PullRequestTable> {
     );
   }
 }
+
+class LabelWidget extends StatelessWidget {
+  final IssueLabel label;
+
+  const LabelWidget(
+    this.label, {
+    super.key,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final chipColor = Color(int.parse('FF${label.color}', radix: 16));
+
+    return Material(
+      color: chipColor,
+      shape: const StadiumBorder(),
+      elevation: 2,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 6.0),
+        child: Text(
+          label.name,
+          style: TextStyle(
+            color: isLightColor(chipColor)
+                ? Colors.grey.shade900
+                : Colors.grey.shade100,
+          ),
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+        ),
+      ),
+    );
+  }
+}
+
+bool isLightColor(Color color) =>
+    ThemeData.estimateBrightnessForColor(color) == Brightness.light;
