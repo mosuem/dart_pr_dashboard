@@ -1,5 +1,5 @@
-import 'package:github/github.dart';
 import 'package:dart_pr_dashboard/src/misc.dart';
+import 'package:github/github.dart';
 
 class SearchFilter {
   final List<User> googlers;
@@ -32,6 +32,7 @@ class SearchFilter {
       }
       if (allMatches.isEmpty) return null;
     } catch (e) {
+      // ignore: avoid_print
       print(e);
       return null;
     }
