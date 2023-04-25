@@ -58,7 +58,8 @@ class DefaultFirebaseOptions {
     messagingSenderId: '197119658635',
     projectId: 'dart-pr-dashboard',
     authDomain: 'dart-pr-dashboard.firebaseapp.com',
-    databaseURL: 'https://dart-pr-dashboard-default-rtdb.europe-west1.firebasedatabase.app',
+    databaseURL:
+        'https://dart-pr-dashboard-default-rtdb.europe-west1.firebasedatabase.app',
     storageBucket: 'dart-pr-dashboard.appspot.com',
     measurementId: 'G-116GB62YM7',
   );
