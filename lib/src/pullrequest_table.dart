@@ -23,33 +23,29 @@ class _PullRequestTableState extends State<PullRequestTable> {
   Widget build(BuildContext context) {
     final columns = [
       FlexColumn(
-        title: 'repo',
-        valueFunction: (PullRequest pr) => pr.base?.repo?.slug().name,
-      ),
-      FlexColumn(
-          title: 'number',
-          valueFunction: (PullRequest pr) => pr.number,
-          flex: 5),
-      FlexColumn(
-        title: 'title',
+        title: 'PR',
         valueFunction: (PullRequest pr) => pr.title,
         flex: 20,
       ),
       FlexColumn(
-        title: 'created_at',
+        title: 'Repo',
+        valueFunction: (PullRequest pr) => pr.base?.repo?.slug().fullName,
+      ),
+      FlexColumn(
+        title: 'Age (days)',
         valueFunction: (PullRequest pr) => pr.createdAt,
         renderer: daysSince,
-        flex: 5,
+        flex: 6,
         initiallySort: true,
       ),
       FlexColumn(
-        title: 'updated_at',
+        title: 'Updated (days)',
         valueFunction: (PullRequest pr) => pr.updatedAt,
         renderer: daysSince,
-        flex: 5,
+        flex: 6,
       ),
       FlexColumn(
-        title: 'labels',
+        title: 'Labels',
         valueFunction: (PullRequest pr) => pr.labels,
         renderer: (value) => value.map((e) => "'${e.name}'").join(', '),
         comparator: (a, b) => a.length.compareTo(b.length),
@@ -65,11 +61,11 @@ class _PullRequestTableState extends State<PullRequestTable> {
         ),
       ),
       FlexColumn(
-          title: 'author',
+          title: 'Author',
           valueFunction: (PullRequest pr) =>
               formatUsername(pr.user, widget.googlers)),
       FlexColumn(
-        title: 'reviewers',
+        title: 'Reviewers',
         valueFunction: (PullRequest pr) => pr.requestedReviewers
             ?.map(
               (reviewer) => formatUsername(
@@ -80,14 +76,14 @@ class _PullRequestTableState extends State<PullRequestTable> {
             .join(', '),
       ),
       FlexColumn(
-        title: 'author_association',
+        title: 'Author association',
         valueFunction: (PullRequest pr) => pr.authorAssociation,
       ),
-      FlexColumn(
-        title: 'state',
-        valueFunction: (PullRequest pr) => pr.state,
-        flex: 5,
-      ),
+      // FlexColumn(
+      //   title: 'State',
+      //   valueFunction: (PullRequest pr) => pr.state,
+      //   flex: 5,
+      // ),
     ];
     return Expanded(
       child: FlexTable<PullRequest>(
