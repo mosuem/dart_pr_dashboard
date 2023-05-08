@@ -123,7 +123,11 @@ class FlexColumn<T extends Object, S extends Object> {
     if (renderFunction != null) {
       return renderFunction!(pr);
     } else {
-      return Text(transformFunction(pr));
+      return Text(
+        transformFunction(pr),
+        maxLines: 2,
+        overflow: TextOverflow.ellipsis,
+      );
     }
   }
 
@@ -152,6 +156,7 @@ class FlexRow<T extends Object> extends StatelessWidget {
   final List<Widget> children;
   final List<FlexColumn> columns;
   final void Function() onTap;
+
   const FlexRow({
     super.key,
     required this.children,
@@ -164,6 +169,7 @@ class FlexRow<T extends Object> extends StatelessWidget {
     return InkWell(
       onTap: onTap,
       child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: List.generate(
           children.length,
           (index) => Expanded(

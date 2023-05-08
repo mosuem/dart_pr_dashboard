@@ -67,6 +67,7 @@ class MyApp extends StatelessWidget {
       home: const MyHomePage(),
       title: 'Dart PR Dashboard',
       theme: ThemeData.dark(useMaterial3: true),
+      debugShowCheckedModeBanner: false,
     );
   }
 }
@@ -119,11 +120,12 @@ class _MyHomePageState extends State<MyHomePage> {
               icon: const Icon(Icons.settings)),
         ],
       ),
-      body: Center(
+      body: Padding(
+        padding: const EdgeInsets.only(left: 16, right: 16, bottom: 8),
         child: Column(
           children: [
             Padding(
-              padding: const EdgeInsets.all(8.0),
+              padding: const EdgeInsets.all(16.0),
               child: Row(
                 children: [
                   Expanded(
@@ -169,6 +171,7 @@ class _MyHomePageState extends State<MyHomePage> {
                   )
                   .toList(),
             ),
+            const SizedBox(height: 16),
             PullRequestTable(
               pullRequests: filteredPRsController.stream,
               googlers: googlers,
