@@ -21,7 +21,10 @@ late final List<User> googlers;
 const presetFilters = [
   (name: 'Unlabeled', filter: r'labels:$^'),
   (name: 'Without reviewers', filter: r'reviewers:$^'),
-  (name: 'Not authored by a Googler', filter: 'author:.*[^$gWithCircle]\$'),
+  (
+    name: 'Not authored by a Googler',
+    filter: 'author:.*(?<!\\($gWithCircle\\))\$'
+  ),
   (name: 'Not authored by a bot', filter: r'author:.*(?<!\[bot\])$'),
 ];
 
@@ -178,7 +181,7 @@ class _MyHomePageState extends State<MyHomePage> {
               ),
             ),
             Row(children: [
-              ...presetFilters
+              ...filters
                   .map(
                     (e) => TextButton(
                       onPressed: () {
@@ -197,10 +200,49 @@ class _MyHomePageState extends State<MyHomePage> {
                   .toList(),
               const Spacer(),
               TextButton(
-                onPressed: () {
-                  setState(() {});
+                onPressed: () async {
+                  final filterNameController = TextEditingController();
+
+                  final cancelButton = TextButton(
+                    child: const Text('Cancel'),
+                    onPressed: () => Navigator.pop(context, false),
+                  );
+
+                  final saveButton = TextButton(
+                    child: const Text('Save'),
+                    onPressed: () async {
+                      await saveFilter((
+                        name: filterNameController.text,
+                        filter: controller.text,
+                      ));
+                      // ignore: use_build_context_synchronously
+                      Navigator.pop(context, true);
+                    },
+                  );
+
+                  final dialog = await showDialog<bool>(
+                    context: context,
+                    builder: (BuildContext context) => AlertDialog(
+                      title: const Text('Save'),
+                      content: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Text('Save filter as '),
+                          TextField(controller: filterNameController)
+                        ],
+                      ),
+                      actions: [cancelButton, saveButton],
+                    ),
+                  );
+
+                  if (dialog ?? false) {
+                    final savedFilters = await loadFilters();
+                    setState(() {
+                      filters = [...presetFilters, ...savedFilters];
+                    });
+                  }
                 },
-                child: const Text('Save Filter'),
+                child: const Text('Save filter'),
               ),
             ]),
             const SizedBox(height: 16),
