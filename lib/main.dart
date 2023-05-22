@@ -9,6 +9,7 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter/material.dart';
 import 'package:github/github.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import 'filter.dart';
 import 'firebase_options.dart';
@@ -17,9 +18,23 @@ import 'updater.dart';
 late final Map<RepositorySlug, List<PullRequest>> prs;
 late final List<User> googlers;
 
+const presetFilters = [
+  (name: 'Unlabeled', filter: r'labels:$^'),
+  (name: 'Without reviewers', filter: r'reviewers:$^'),
+  (
+    name: 'Not authored by a Googler',
+    filter: 'author:.*(?<!\\($gWithCircle\\))\$'
+  ),
+  (name: 'Not authored by a bot', filter: r'author:.*(?<!\[bot\])$'),
+];
+
+List<({String filter, String name})> filters = [];
+
 Future<void> main() async {
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
   await readData();
+  final localFilters = await loadFilters();
+  filters = [...presetFilters, ...localFilters];
   runApp(const MyApp());
 }
 
@@ -56,6 +71,24 @@ Future<void> readData() async {
   // prs = jsonDecoded.map((k, v) => MapEntry(RepositorySlug.full(k),
   //     (v as List).map((e) => PullRequest.fromJson(e)).toList()));
   // googlers = [];
+}
+
+Future<List<({String name, String filter})>> loadFilters() async {
+  final instance = await SharedPreferences.getInstance();
+  final List filters = json.decode(instance.getString('filters') ?? '[]');
+  return filters
+      .map((e) => (name: e['name'] as String, filter: e['filter'] as String))
+      .toList();
+}
+
+Future<void> saveFilter(({String name, String filter}) namedFilter) async {
+  final savedFilters = await loadFilters();
+  savedFilters.removeWhere((filter) => filter.name == namedFilter.name);
+  if (namedFilter.filter.isNotEmpty) savedFilters.add(namedFilter);
+  final instance = await SharedPreferences.getInstance();
+  final encodedFilters = json.encode(
+      savedFilters.map((e) => {'name': e.name, 'filter': e.filter}).toList());
+  await instance.setString('filters', encodedFilters);
 }
 
 class MyApp extends StatelessWidget {
@@ -146,18 +179,12 @@ class _MyHomePageState extends State<MyHomePage> {
                 ],
               ),
             ),
-            Row(
-              children: {
-                'Unlabeled': r'labels:$^',
-                'Without reviewers': r'reviewers:$^',
-                'Not authored by a Googler': 'author:.*[^$gWithCircle]\$',
-                'Not authored by a bot': r'author:.*(?<!\[bot\])$'
-              }
-                  .entries
+            Row(children: [
+              ...filters
                   .map(
                     (e) => TextButton(
                       onPressed: () {
-                        final text = e.value;
+                        final text = e.filter;
                         if (controller.text.contains(text)) {
                           controller.text =
                               controller.text.replaceAll(text, '');
@@ -166,11 +193,57 @@ class _MyHomePageState extends State<MyHomePage> {
                         }
                         controller.text = controller.text.trim();
                       },
-                      child: Text(e.key),
+                      child: Text(e.name),
                     ),
                   )
                   .toList(),
-            ),
+              const Spacer(),
+              TextButton(
+                onPressed: () async {
+                  final filterNameController = TextEditingController();
+
+                  final cancelButton = TextButton(
+                    child: const Text('Cancel'),
+                    onPressed: () => Navigator.pop(context, false),
+                  );
+
+                  final saveButton = TextButton(
+                    child: const Text('Save'),
+                    onPressed: () async {
+                      await saveFilter((
+                        name: filterNameController.text,
+                        filter: controller.text,
+                      ));
+                      // ignore: use_build_context_synchronously
+                      Navigator.pop(context, true);
+                    },
+                  );
+
+                  final dialog = await showDialog<bool>(
+                    context: context,
+                    builder: (BuildContext context) => AlertDialog(
+                      title: const Text('Save'),
+                      content: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Text('Save filter as '),
+                          TextField(controller: filterNameController)
+                        ],
+                      ),
+                      actions: [cancelButton, saveButton],
+                    ),
+                  );
+
+                  if (dialog ?? false) {
+                    final savedFilters = await loadFilters();
+                    setState(() {
+                      filters = [...presetFilters, ...savedFilters];
+                    });
+                  }
+                },
+                child: const Text('Save filter'),
+              ),
+            ]),
             const SizedBox(height: 16),
             PullRequestTable(
               pullRequests: filteredPRsController.stream,
