@@ -76,7 +76,6 @@ Future<void> readData() async {
 Future<List<({String name, String filter})>> loadFilters() async {
   final instance = await SharedPreferences.getInstance();
   final List filters = json.decode(instance.getString('filters') ?? '[]');
-  print('Filters are: $filters');
   return filters
       .map((e) => (name: e['name'] as String, filter: e['filter'] as String))
       .toList();
