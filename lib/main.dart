@@ -230,9 +230,19 @@ class _MyHomePageState extends State<MyHomePage> {
                     ),
                   ),
                   StreamBuilder<List<PullRequest>>(
-                      stream: filteredPRsController.stream,
-                      builder: (_, snapshot) =>
-                          Text('${(snapshot.data ?? []).length} PRs'))
+                    stream: filteredPRsController.stream,
+                    builder: (_, snapshot) => Padding(
+                      padding: const EdgeInsets.all(8.0),
+                      child: Text('${(snapshot.data ?? []).length} PRs'),
+                    ),
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.all(8.0),
+                    child: TextButton(
+                      onPressed: () => controller.text = '',
+                      child: const Text('Clear'),
+                    ),
+                  ),
                 ],
               ),
             ),

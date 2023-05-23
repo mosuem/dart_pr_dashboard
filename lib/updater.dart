@@ -96,13 +96,14 @@ Future<void> updateStoredToken() async {
   final token = prefs.getString(githubToken);
   if (token == null) return;
 
-  // null controller
-  final streamController = StreamController<String>();
-
-  await update(token, -1, streamController.sink);
+  await update(token, -1);
 }
 
-Future<void> update(String token, int since, StreamSink<String> sink) async {
+Future<void> update(
+  String token,
+  int since, [
+  StreamSink<String>? logger,
+]) async {
   final github = GitHub(auth: Authentication.withToken(token));
 
   updating.value = true;
@@ -127,20 +128,20 @@ Future<void> update(String token, int since, StreamSink<String> sink) async {
         final status =
             'Get PRs for ${slug.fullName} with ${github.rateLimitRemaining} '
             'remaining requests.';
-        sink.add(status);
+        logger?.add(status);
         updatingStatus.value = status;
         await github.pullRequests.list(slug, pages: 1000).forEach(
-            (pr) async => await addPullRequestToDatabase(ref2, pr, sink));
-        sink.add('Done!');
+            (pr) async => await addPullRequestToDatabase(ref2, pr, logger));
+        logger?.add('Done!');
       } else {
         final status =
             'Not updating ${slug.fullName} has been updated $daysSinceUpdate '
             'days ago';
-        sink.add(status);
+        logger?.add(status);
         updatingStatus.value = status;
       }
     } catch (e) {
-      sink.add(e.toString());
+      logger?.add(e.toString());
       updatingStatus.value = e.toString();
     }
   }
@@ -169,10 +170,10 @@ Future<void> fetchGooglers(String token, StreamSink<String> sink) async {
 
 Future<void> addPullRequestToDatabase(
   DatabaseReference ref,
-  PullRequest pr,
-  StreamSink<String> sink,
-) async {
-  sink.add('Handle PR ${pr.id} from ${pr.base!.repo!.slug().fullName}');
+  PullRequest pr, [
+  StreamSink<String>? logger,
+]) async {
+  logger?.add('Handle PR ${pr.id} from ${pr.base!.repo!.slug().fullName}');
   return await ref.child(pr.id!.toString()).set(jsonEncode(pr)).onError(
         (e, _) => throw Exception('Error writing PR: $e'),
       );
