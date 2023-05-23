@@ -99,7 +99,7 @@ Future<void> updateStoredToken() async {
   // null controller
   final streamController = StreamController<String>();
 
-  await update(token, 7, streamController.sink);
+  await update(token, -1, streamController.sink);
 }
 
 Future<void> update(String token, int since, StreamSink<String> sink) async {
