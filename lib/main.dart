@@ -15,8 +15,11 @@ import 'filter.dart';
 import 'firebase_options.dart';
 import 'updater.dart';
 
-late final Map<RepositorySlug, List<PullRequest>> prs;
-late final List<User> googlers;
+Map<RepositorySlug, List<PullRequest>> prs = {};
+List<User> googlers = [];
+
+final ValueNotifier<bool> updating = ValueNotifier(false);
+final ValueNotifier<String?> updatingStatus = ValueNotifier(null);
 
 const presetFilters = [
   (name: 'Unlabeled', filter: r'labels:$^'),
@@ -31,11 +34,16 @@ const presetFilters = [
 List<({String filter, String name})> filters = [];
 
 Future<void> main() async {
-  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
-  await readData();
-  final localFilters = await loadFilters();
-  filters = [...presetFilters, ...localFilters];
-  runApp(const MyApp());
+  final Future<void> ready = () async {
+    await Firebase.initializeApp(
+        options: DefaultFirebaseOptions.currentPlatform);
+    await readData();
+
+    final localFilters = await loadFilters();
+    filters = [...presetFilters, ...localFilters];
+  }();
+
+  runApp(MyApp(ready: ready));
 }
 
 Future<void> readData() async {
@@ -92,15 +100,30 @@ Future<void> saveFilter(({String name, String filter}) namedFilter) async {
 }
 
 class MyApp extends StatelessWidget {
-  const MyApp({super.key});
+  final Future<void> ready;
+
+  const MyApp({required this.ready, super.key});
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      home: const MyHomePage(),
-      title: 'Dart PR Dashboard',
-      theme: ThemeData.dark(useMaterial3: true),
-      debugShowCheckedModeBanner: false,
+    return FutureBuilder(
+      future: ready,
+      builder: (BuildContext context, AsyncSnapshot<void> snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Center(child: CircularProgressIndicator());
+        }
+
+        if (snapshot.hasError) {
+          return Center(child: Text('${snapshot.error}'));
+        }
+
+        return MaterialApp(
+          home: const MyHomePage(),
+          title: 'Dart PR Dashboard',
+          theme: ThemeData.dark(useMaterial3: true),
+          debugShowCheckedModeBanner: false,
+        );
+      },
     );
   }
 }
@@ -139,18 +162,52 @@ class _MyHomePageState extends State<MyHomePage> {
       appBar: AppBar(
         title: const Text('Dart PR Dashboard'),
         actions: [
-          IconButton(
-              onPressed: () async {
-                await Navigator.push(
-                  context,
-                  MaterialPageRoute<void>(
-                    builder: (BuildContext context) => UpdaterPage(),
-                  ),
+          SizedBox.square(
+            dimension: 16,
+            child: ValueListenableBuilder<bool>(
+              valueListenable: updating,
+              builder: (BuildContext context, bool isUpdating, _) {
+                return CircularProgressIndicator(
+                  strokeWidth: 2,
+                  value: isUpdating ? null : 0,
                 );
-                filteredPRsController
-                    .add(prs.values.expand((prList) => prList).toList());
               },
-              icon: const Icon(Icons.settings)),
+            ),
+          ),
+          ValueListenableBuilder<bool>(
+            valueListenable: updating,
+            builder: (BuildContext context, bool isUpdating, _) {
+              return IconButton(
+                icon: const Icon(Icons.refresh),
+                onPressed: isUpdating
+                    ? null
+                    : () async {
+                        await updateStoredToken();
+                        await readData();
+                        filteredPRsController.add(
+                            prs.values.expand((prList) => prList).toList());
+                      },
+              );
+            },
+          ),
+          const SizedBox.square(
+            dimension: 24,
+            child: VerticalDivider(),
+          ),
+          IconButton(
+            icon: const Icon(Icons.settings),
+            onPressed: () async {
+              await Navigator.push(
+                context,
+                MaterialPageRoute<void>(
+                  builder: (BuildContext context) => UpdaterPage(),
+                ),
+              );
+              filteredPRsController
+                  .add(prs.values.expand((prList) => prList).toList());
+            },
+          ),
+          const SizedBox(width: 8),
         ],
       ),
       body: Padding(
@@ -248,6 +305,19 @@ class _MyHomePageState extends State<MyHomePage> {
             PullRequestTable(
               pullRequests: filteredPRsController.stream,
               googlers: googlers,
+            ),
+            ValueListenableBuilder(
+              valueListenable: updatingStatus,
+              builder: (BuildContext context, String? value, _) {
+                return AnimatedContainer(
+                  duration: const Duration(milliseconds: 250),
+                  height: value == null ? 0 : 32,
+                  child: Padding(
+                    padding: const EdgeInsets.only(top: 8),
+                    child: Text(value ?? ''),
+                  ),
+                );
+              },
             ),
           ],
         ),
