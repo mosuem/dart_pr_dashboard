@@ -108,31 +108,42 @@ Future<void> update(
 
   updating.value = true;
 
-  for (final slug in [...repos..shuffle()]) {
+  final repositories =
+      github.repositories.listOrganizationRepositories('dart-lang');
+  final dartLangRepos = await repositories
+      .map((event) => event.slug())
+      .where((event) => !exludeRepos.contains(event))
+      .toList();
+
+  for (final slug in [...dartLangRepos, ...includeRepos]) {
     try {
       final ref = FirebaseDatabase.instance
           .ref('pullrequests/last_updated/${slug.owner}:${slug.name}');
-      final snapshot2 = await ref.get();
+      final lastUpdatedSnapshot = await ref.get();
       DateTime lastUpdated;
-      if (snapshot2.exists) {
-        lastUpdated =
-            DateTime.fromMillisecondsSinceEpoch(snapshot2.value as int);
+      if (lastUpdatedSnapshot.exists) {
+        final value = lastUpdatedSnapshot.value as int;
+        lastUpdated = DateTime.fromMillisecondsSinceEpoch(value);
       } else {
         lastUpdated = DateTime.fromMillisecondsSinceEpoch(0);
       }
       final daysSinceUpdate = DateTime.now().difference(lastUpdated).inDays;
       if (daysSinceUpdate > since) {
-        final ref2 = FirebaseDatabase.instance
+        final prRef = FirebaseDatabase.instance
             .ref('pullrequests/data/${slug.owner}:${slug.name}');
         await ref.set(DateTime.now().millisecondsSinceEpoch);
         final status =
             'Get PRs for ${slug.fullName} with ${github.rateLimitRemaining} '
-            'remaining requests.';
+            'remaining requests';
         logger?.add(status);
+        // Remove old PRs
+        await prRef.remove();
+
         updatingStatus.value = status;
+
         await github.pullRequests.list(slug, pages: 1000).forEach(
-            (pr) async => await addPullRequestToDatabase(ref2, pr, logger));
-        logger?.add('Done!');
+            (pr) async => await addPullRequestToDatabase(prRef, pr, logger));
+        logger?.add('Done');
       } else {
         final status =
             'Not updating ${slug.fullName} has been updated $daysSinceUpdate '
@@ -145,6 +156,16 @@ Future<void> update(
       updatingStatus.value = e.toString();
     }
   }
+
+  updatingStatus.value = null;
+  updating.value = false;
+}
+
+Future<void> delete() async {
+  updating.value = true;
+
+  final ref = FirebaseDatabase.instance.ref('pullrequests');
+  await ref.remove();
 
   updatingStatus.value = null;
   updating.value = false;

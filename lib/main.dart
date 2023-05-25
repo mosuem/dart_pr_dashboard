@@ -183,6 +183,21 @@ class _MyHomePageState extends State<MyHomePage> {
                     ? null
                     : () async {
                         await updateStoredToken();
+                        await delete();
+                        filteredPRsController.add(
+                            prs.values.expand((prList) => prList).toList());
+                      },
+              );
+            },
+          ),
+          ValueListenableBuilder<bool>(
+            valueListenable: updating,
+            builder: (BuildContext context, bool isUpdating, _) {
+              return IconButton(
+                icon: const Icon(Icons.delete),
+                onPressed: isUpdating
+                    ? null
+                    : () async {
                         await readData();
                         filteredPRsController.add(
                             prs.values.expand((prList) => prList).toList());
