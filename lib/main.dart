@@ -132,9 +132,7 @@ class MyApp extends StatelessWidget {
             return MaterialApp(
               home: const MyHomePage(),
               title: 'Dart PR Dashboard',
-              theme: value
-                  ? ThemeData.dark(useMaterial3: true)
-                  : ThemeData.light(useMaterial3: true),
+              theme: value ? ThemeData.dark() : ThemeData.light(),
               debugShowCheckedModeBanner: false,
             );
           },
