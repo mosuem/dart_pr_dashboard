@@ -48,7 +48,7 @@ Future<void> main() async {
 
 Future<void> readData() async {
   final ref = FirebaseDatabase.instance.ref();
-  final snapshot = await ref.child('pullrequests/data').get();
+  final snapshot = await ref.child('pullrequests/data/').get();
   if (snapshot.exists) {
     final value = snapshot.value as Map<String, dynamic>;
     prs = value.map(
@@ -61,7 +61,7 @@ Future<void> readData() async {
       ),
     );
   } else {
-    print('No data available.');
+    print('No pullrequests available.');
   }
 
   final snapshot2 = await ref.child('googlers').get();
@@ -70,7 +70,7 @@ Future<void> readData() async {
     googlers =
         (jsonDecode(jsonEncoded) as List).map((e) => User.fromJson(e)).toList();
   } else {
-    print('No data available.');
+    print('No googlers available.');
   }
 
   // --- For local development
@@ -114,7 +114,7 @@ class MyApp extends StatelessWidget {
         }
 
         if (snapshot.hasError) {
-          return Center(child: Text('${snapshot.error}'));
+          return Center(child: Text('${snapshot.error?.toString()}'));
         }
 
         return MaterialApp(
@@ -183,7 +183,7 @@ class _MyHomePageState extends State<MyHomePage> {
                     ? null
                     : () async {
                         await updateStoredToken();
-                        await delete();
+                        await readData();
                         filteredPRsController.add(
                             prs.values.expand((prList) => prList).toList());
                       },
@@ -198,7 +198,7 @@ class _MyHomePageState extends State<MyHomePage> {
                 onPressed: isUpdating
                     ? null
                     : () async {
-                        await readData();
+                        await delete();
                         filteredPRsController.add(
                             prs.values.expand((prList) => prList).toList());
                       },
@@ -264,18 +264,35 @@ class _MyHomePageState extends State<MyHomePage> {
             Row(children: [
               ...filters
                   .map(
-                    (e) => TextButton(
-                      onPressed: () {
-                        final text = e.filter;
-                        if (controller.text.contains(text)) {
-                          controller.text =
-                              controller.text.replaceAll(text, '');
-                        } else {
-                          controller.text += ' $text';
-                        }
-                        controller.text = controller.text.trim();
-                      },
-                      child: Text(e.name),
+                    (e) => Padding(
+                      padding: const EdgeInsets.all(8.0),
+                      child: Container(
+                        padding: const EdgeInsets.all(4.0),
+                        decoration: BoxDecoration(
+                            borderRadius: const BorderRadius.all(
+                              Radius.circular(5),
+                            ),
+                            border: Border.all(
+                              color: Colors.grey,
+                            )),
+                        child: InkWell(
+                          onTap: () {
+                            final text = e.filter;
+                            if (controller.text.contains(text)) {
+                              controller.text =
+                                  controller.text.replaceAll(text, '');
+                            } else {
+                              controller.text += ' $text';
+                            }
+                            controller.text = controller.text.trim();
+                          },
+                          onLongPress: () {
+                            final text = e.filter;
+                            controller.text = text.trim();
+                          },
+                          child: Text(e.name),
+                        ),
+                      ),
                     ),
                   )
                   .toList(),

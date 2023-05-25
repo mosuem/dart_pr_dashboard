@@ -63,11 +63,20 @@ class _FlexTableState<T extends Object> extends State<FlexTable<T>> {
                       }),
                       children: List.generate(
                         widget.columns.length,
-                        (index) => Text(
-                          widget.columns[index].title,
-                          style: index == sortedKey
-                              ? const TextStyle(fontWeight: FontWeight.bold)
-                              : null,
+                        (index) => Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              widget.columns[index].title,
+                              style: index == sortedKey
+                                  ? const TextStyle(fontWeight: FontWeight.bold)
+                                  : null,
+                            ),
+                            Text(
+                              widget.columns[index].subtitle,
+                              style: const TextStyle(color: Colors.grey),
+                            ),
+                          ],
                         ),
                       ),
                     );
@@ -100,6 +109,7 @@ class _FlexTableState<T extends Object> extends State<FlexTable<T>> {
 
 class FlexColumn<T extends Object, S extends Object> {
   final String title;
+  final String subtitle;
   final int flex;
 
   final S? Function(T pr) valueFunction;
@@ -111,6 +121,7 @@ class FlexColumn<T extends Object, S extends Object> {
 
   FlexColumn({
     required this.title,
+    this.subtitle = '',
     required this.valueFunction,
     this.initiallySort = false,
     this.renderer,

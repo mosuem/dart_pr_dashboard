@@ -63,13 +63,8 @@ class UpdaterPage extends StatelessWidget {
                           onPressed: () async {
                             await instance.setString(
                                 githubToken, tokenController.text);
-                            await update(
-                              tokenController.text,
-                              int.parse(daysController.text),
-                              streamController.sink,
-                            );
                           },
-                          child: const Text('Update database'),
+                          child: const Text('Save token'),
                         ),
                       ],
                     ),
@@ -111,10 +106,11 @@ Future<void> update(
   final repositories =
       github.repositories.listOrganizationRepositories('dart-lang');
   final dartLangRepos = await repositories
-      .map((event) => event.slug())
-      .where((event) => !exludeRepos.contains(event))
+      .where((repository) => !repository.archived)
+      .map((repository) => repository.slug())
+      .where((slug) => !exludeRepos.contains(slug))
       .toList();
-
+  print('Found ${dartLangRepos.length} repos');
   for (final slug in [...dartLangRepos, ...includeRepos]) {
     try {
       final ref = FirebaseDatabase.instance
@@ -164,6 +160,7 @@ Future<void> update(
 Future<void> delete() async {
   updating.value = true;
 
+  updatingStatus.value = 'Deleting all entries';
   final ref = FirebaseDatabase.instance.ref('pullrequests');
   await ref.remove();
 

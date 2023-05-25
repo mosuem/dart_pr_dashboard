@@ -24,15 +24,18 @@ class _PullRequestTableState extends State<PullRequestTable> {
     final columns = [
       FlexColumn(
         title: 'PR',
+        subtitle: 'title',
         valueFunction: (PullRequest pr) => pr.title,
         flex: 22,
       ),
       FlexColumn(
         title: 'Repo',
+        subtitle: 'repo',
         valueFunction: (PullRequest pr) => pr.base?.repo?.slug().fullName,
       ),
       FlexColumn(
         title: 'Age (days)',
+        subtitle: 'created_at',
         valueFunction: (PullRequest pr) => pr.createdAt,
         renderer: daysSince,
         flex: 6,
@@ -40,12 +43,14 @@ class _PullRequestTableState extends State<PullRequestTable> {
       ),
       FlexColumn(
         title: 'Updated (days)',
+        subtitle: 'updated_at',
         valueFunction: (PullRequest pr) => pr.updatedAt,
         renderer: daysSince,
         flex: 6,
       ),
       FlexColumn(
         title: 'Author',
+        subtitle: 'author',
         valueFunction: (PullRequest pr) {
           var text = formatUsername(pr.user, widget.googlers);
           if (pr.authorAssociation != null) {
@@ -56,12 +61,14 @@ class _PullRequestTableState extends State<PullRequestTable> {
       ),
       FlexColumn(
         title: 'Reviewers',
+        subtitle: 'reviewers',
         valueFunction: (PullRequest pr) => pr.requestedReviewers
             ?.map((reviewer) => formatUsername(reviewer, widget.googlers))
             .join(', '),
       ),
       FlexColumn(
         title: 'Labels',
+        subtitle: 'labels',
         flex: 12,
         valueFunction: (PullRequest pr) => pr.labels,
         renderer: (value) => value.map((e) => "'${e.name}'").join(', '),
