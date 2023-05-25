@@ -110,7 +110,6 @@ Future<void> update(
       .map((repository) => repository.slug())
       .where((slug) => !exludeRepos.contains(slug))
       .toList();
-  print('Found ${dartLangRepos.length} repos');
   for (final slug in [...dartLangRepos, ...includeRepos]) {
     try {
       final ref = FirebaseDatabase.instance
