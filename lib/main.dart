@@ -21,6 +21,8 @@ List<User> googlers = [];
 final ValueNotifier<bool> updating = ValueNotifier(false);
 final ValueNotifier<String?> updatingStatus = ValueNotifier(null);
 
+final ValueNotifier<bool> darkMode = ValueNotifier(true);
+
 const presetFilters = [
   (name: 'Unlabeled', filter: r'labels:$^'),
   (name: 'Without reviewers', filter: r'reviewers:$^'),
@@ -38,6 +40,13 @@ Future<void> main() async {
     await Firebase.initializeApp(
         options: DefaultFirebaseOptions.currentPlatform);
     await readData();
+
+    // Init the dark mode value notifier.
+    final prefs = await SharedPreferences.getInstance();
+    darkMode.value = prefs.getBool('darkMode') ?? true;
+    darkMode.addListener(() async {
+      await prefs.setBool('darkMode', darkMode.value);
+    });
 
     final localFilters = await loadFilters();
     filters = [...presetFilters, ...localFilters];
@@ -117,11 +126,18 @@ class MyApp extends StatelessWidget {
           return Center(child: Text('${snapshot.error?.toString()}'));
         }
 
-        return MaterialApp(
-          home: const MyHomePage(),
-          title: 'Dart PR Dashboard',
-          theme: ThemeData.dark(useMaterial3: true),
-          debugShowCheckedModeBanner: false,
+        return ValueListenableBuilder<bool>(
+          valueListenable: darkMode,
+          builder: (BuildContext context, bool value, _) {
+            return MaterialApp(
+              home: const MyHomePage(),
+              title: 'Dart PR Dashboard',
+              theme: value
+                  ? ThemeData.dark(useMaterial3: true)
+                  : ThemeData.light(useMaterial3: true),
+              debugShowCheckedModeBanner: false,
+            );
+          },
         );
       },
     );
@@ -208,6 +224,19 @@ class _MyHomePageState extends State<MyHomePage> {
           const SizedBox.square(
             dimension: 24,
             child: VerticalDivider(),
+          ),
+          ValueListenableBuilder<bool>(
+            valueListenable: darkMode,
+            builder: (BuildContext context, bool value, _) {
+              return IconButton(
+                icon: Icon(value
+                    ? Icons.light_mode_outlined
+                    : Icons.dark_mode_outlined),
+                onPressed: () async {
+                  darkMode.value = !darkMode.value;
+                },
+              );
+            },
           ),
           IconButton(
             icon: const Icon(Icons.settings),
