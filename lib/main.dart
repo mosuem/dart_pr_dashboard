@@ -132,9 +132,7 @@ class MyApp extends StatelessWidget {
             return MaterialApp(
               home: const MyHomePage(),
               title: 'Dart PR Dashboard',
-              theme: value
-                  ? ThemeData.dark(useMaterial3: true)
-                  : ThemeData.light(useMaterial3: true),
+              theme: value ? ThemeData.dark() : ThemeData.light(),
               debugShowCheckedModeBanner: false,
             );
           },
@@ -273,13 +271,6 @@ class _MyHomePageState extends State<MyHomePage> {
                       controller: controller,
                     ),
                   ),
-                  StreamBuilder<List<PullRequest>>(
-                    stream: filteredPRsController.stream,
-                    builder: (_, snapshot) => Padding(
-                      padding: const EdgeInsets.all(8.0),
-                      child: Text('${(snapshot.data ?? []).length} PRs'),
-                    ),
-                  ),
                   Padding(
                     padding: const EdgeInsets.all(8.0),
                     child: TextButton(
@@ -291,40 +282,37 @@ class _MyHomePageState extends State<MyHomePage> {
               ),
             ),
             Row(children: [
-              ...filters
-                  .map(
-                    (e) => Padding(
-                      padding: const EdgeInsets.all(8.0),
-                      child: Container(
-                        padding: const EdgeInsets.all(4.0),
-                        decoration: BoxDecoration(
-                            borderRadius: const BorderRadius.all(
-                              Radius.circular(5),
-                            ),
-                            border: Border.all(
-                              color: Colors.grey,
-                            )),
-                        child: InkWell(
-                          onTap: () {
-                            final text = e.filter;
-                            if (controller.text.contains(text)) {
-                              controller.text =
-                                  controller.text.replaceAll(text, '');
-                            } else {
-                              controller.text += ' $text';
-                            }
-                            controller.text = controller.text.trim();
-                          },
-                          onLongPress: () {
-                            final text = e.filter;
-                            controller.text = text.trim();
-                          },
-                          child: Text(e.name),
-                        ),
-                      ),
-                    ),
-                  )
-                  .toList(),
+              ConstrainedBox(
+                constraints: const BoxConstraints(maxHeight: 32.0),
+                child: ToggleButtons(
+                  borderRadius: BorderRadius.circular(6),
+                  textStyle: Theme.of(context).textTheme.titleMedium,
+                  isSelected: [
+                    ...filters.map(
+                        (filter) => controller.text.contains(filter.filter)),
+                  ],
+                  onPressed: (index) {
+                    setState(() {
+                      final filter = filters[index];
+                      final text = filter.filter;
+                      if (controller.text.contains(text)) {
+                        controller.text = controller.text.replaceAll(text, '');
+                      } else {
+                        controller.text += ' $text';
+                      }
+                      controller.text = controller.text.trim();
+                    });
+                  },
+                  children: [
+                    ...filters.map((filter) {
+                      return Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 10),
+                        child: Text(filter.name),
+                      );
+                    }),
+                  ],
+                ),
+              ),
               const Spacer(),
               TextButton(
                 onPressed: () async {
@@ -372,7 +360,6 @@ class _MyHomePageState extends State<MyHomePage> {
                 child: const Text('Save filter'),
               ),
             ]),
-            const SizedBox(height: 16),
             PullRequestTable(
               pullRequests: filteredPRsController.stream,
               googlers: googlers,
