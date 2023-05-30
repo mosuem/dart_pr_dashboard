@@ -5,18 +5,19 @@ version: 1.0.0+1
 publish_to: 'none'
 
 environment:
-  sdk: '>=3.0.0-322.0.dev <4.0.0'
+  sdk: ^3.0.0
 
 dependencies:
   flutter:
     sdk: flutter
-  github: ^9.11.0
-  url_launcher: ^6.1.10
-  shared_preferences: ^2.1.0
-  firebase_core: ^2.9.0
   cloud_firestore: ^4.5.1
+  firebase_core: ^2.9.0
   firebase_database: ^10.1.0
-  
+  github: ^9.11.0
+  shared_preferences: ^2.1.0
+  url_launcher: ^6.1.10
+  vtable: ^0.3.1
+
 dev_dependencies:
   flutter_test:
     sdk: flutter

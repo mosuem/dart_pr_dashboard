@@ -1,7 +1,8 @@
 import 'package:github/github.dart';
 
 final noTime = DateTime.fromMillisecondsSinceEpoch(0);
-const gWithCircle = '\u24BC';
+
+const gWithCircle = 'googler'; // todo: char \u24BC is to tall
 
 String daysSince(DateTime? dt) {
   if (dt == null) return '';
