@@ -136,8 +136,11 @@ Future<void> update(
 
         updatingStatus.value = status;
 
-        await github.pullRequests.list(slug, pages: 1000).forEach(
-            (pr) async => await addPullRequestToDatabase(prRef, pr, logger));
+        await github.pullRequests.list(slug, pages: 1000).forEach((pr) async {
+          final list = await getReviewers(github, slug, pr);
+          pr.requestedReviewers?.addAll(list);
+          await addPullRequestToDatabase(prRef, pr, logger);
+        });
         logger?.add('Done');
       } else {
         final status =
@@ -155,6 +158,13 @@ Future<void> update(
   updatingStatus.value = null;
   updating.value = false;
 }
+
+Future<List<User>> getReviewers(
+        GitHub github, RepositorySlug slug, PullRequest pr) async =>
+    github.pullRequests
+        .listReviews(slug, pr.number!)
+        .map((prReview) => prReview.user)
+        .toList();
 
 Future<void> delete() async {
   updating.value = true;
