@@ -62,6 +62,7 @@ class _PullRequestTableState extends State<PullRequestTable> {
                 styleFunction: rowStyle,
                 compareFunction: (a, b) =>
                     compareDates(b.createdAt, a.createdAt),
+                validators: [oldPrValidator],
               ),
               VTableColumn(
                 label: 'Updated (days)',
@@ -72,15 +73,16 @@ class _PullRequestTableState extends State<PullRequestTable> {
                 styleFunction: rowStyle,
                 compareFunction: (a, b) =>
                     compareDates(b.updatedAt, a.updatedAt),
+                validators: [probablyStaleValidator],
               ),
               VTableColumn(
                 label: 'Author',
                 width: 100,
-                grow: 0.5,
+                grow: 0.4,
                 transformFunction: (PullRequest pr) {
                   var text = formatUsername(pr.user, widget.googlers);
                   if (pr.authorAssociationDisplay != null) {
-                    text = '$text\n${pr.authorAssociationDisplay}';
+                    text = '$text, ${pr.authorAssociationDisplay}';
                   }
                   return text;
                 },
@@ -88,8 +90,8 @@ class _PullRequestTableState extends State<PullRequestTable> {
               ),
               VTableColumn(
                 label: 'Reviewers',
-                width: 100,
-                grow: 0.5,
+                width: 110,
+                grow: 0.6,
                 transformFunction: (PullRequest pr) {
                   return (pr.requestedReviewers ?? [])
                       .map((reviewer) =>
@@ -97,6 +99,9 @@ class _PullRequestTableState extends State<PullRequestTable> {
                       .join(', ');
                 },
                 styleFunction: rowStyle,
+                validators: [
+                  (pr) => needsReviewersValidator(widget.googlers, pr),
+                ],
               ),
               VTableColumn(
                 label: 'Labels',
@@ -122,7 +127,10 @@ class _PullRequestTableState extends State<PullRequestTable> {
 const TextStyle draftPrStyle = TextStyle(color: Colors.grey);
 
 TextStyle? rowStyle(PullRequest pr) {
-  return pr.draft == true ? draftPrStyle : null;
+  if (pr.draft == true) return draftPrStyle;
+  if (pr.copybaraPR) return draftPrStyle;
+
+  return null;
 }
 
 int compareDates(DateTime? a, DateTime? b) {
@@ -141,6 +149,18 @@ extension PullRequestExtension on PullRequest {
     if (authorAssociation == null || authorAssociation == 'NONE') return null;
     return authorAssociation!.toLowerCase();
   }
+
+  List<User> get reviewers => requestedReviewers ?? const [];
+
+  bool authorIsGoogler(List<User> googlers) {
+    final login = user?.login;
+    if (login == null) return false;
+
+    // TODO: cache the googler logins in a set
+    return googlers.any((googler) => googler.login == login);
+  }
+
+  bool get copybaraPR => user?.login == 'copybara-service[bot]';
 }
 
 class LabelWidget extends StatelessWidget {
@@ -178,3 +198,37 @@ class LabelWidget extends StatelessWidget {
 
 bool isLightColor(Color color) =>
     ThemeData.estimateBrightnessForColor(color) == Brightness.light;
+
+ValidationResult? needsReviewersValidator(List<User> googlers, PullRequest pr) {
+  if (pr.reviewers.isEmpty && !pr.authorIsGoogler(googlers)) {
+    return ValidationResult.warning('PR has no reviewer assigned');
+  }
+
+  return null;
+}
+
+ValidationResult? oldPrValidator(PullRequest pr) {
+  final createdAt = pr.createdAt;
+  if (createdAt == null) return null;
+
+  final days = DateTime.now().difference(createdAt).inDays;
+  if (days > 365) {
+    return ValidationResult.warning('PR is objectively pretty old');
+  }
+
+  return null;
+}
+
+ValidationResult? probablyStaleValidator(PullRequest pr) {
+  if (pr.reviewers.isEmpty || pr.draft == true) return null;
+
+  final updatedAt = pr.updatedAt;
+  if (updatedAt == null) return null;
+
+  final days = DateTime.now().difference(updatedAt).inDays;
+  if (days > 30) {
+    return ValidationResult.warning('PR not updated recently');
+  }
+
+  return null;
+}
