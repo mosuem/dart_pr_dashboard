@@ -23,5 +23,7 @@ PullRequest decodePR(String json) {
   final decodedReviewers = decoded['reviewers'] as List;
   final pr = PullRequest.fromJson(decodedPR);
   pr.reviewers = decodedReviewers.map((e) => User.fromJson(e)).toList();
+  pr.requestedReviewers?.removeWhere((user) =>
+      pr.reviewers?.any((reviewer) => reviewer.login == user.login) ?? false);
   return pr;
 }

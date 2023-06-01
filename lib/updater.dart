@@ -20,7 +20,6 @@ class UpdaterPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final tokenController = TextEditingController();
-    final daysController = TextEditingController(text: '7');
 
     return Scaffold(
       appBar: AppBar(
@@ -43,11 +42,6 @@ class UpdaterPage extends StatelessWidget {
                 children: [
                   const Text('Github token'),
                   TextField(controller: tokenController),
-                  const Text('Update if older than # days:'),
-                  TextField(
-                    controller: daysController,
-                    keyboardType: TextInputType.number,
-                  ),
                   Padding(
                     padding: const EdgeInsets.all(8.0),
                     child: Row(
@@ -161,11 +155,19 @@ Future<void> update(
 }
 
 Future<List<User>> getReviewers(
-        GitHub github, RepositorySlug slug, PullRequest pr) async =>
-    github.pullRequests
-        .listReviews(slug, pr.number!)
-        .map((prReview) => prReview.user)
-        .toList();
+  GitHub github,
+  RepositorySlug slug,
+  PullRequest pr,
+) async {
+  final reviewers = await github.pullRequests
+      .listReviews(slug, pr.number!)
+      .map((prReview) => prReview.user)
+      .toList();
+  // Deduplicate reviewers
+  final uniqueNames = reviewers.map((e) => e.login).whereType<String>().toSet();
+  reviewers.retainWhere((reviewer) => uniqueNames.remove(reviewer.login));
+  return reviewers;
+}
 
 Future<void> delete() async {
   updating.value = true;

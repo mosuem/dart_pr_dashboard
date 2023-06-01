@@ -93,11 +93,22 @@ class _PullRequestTableState extends State<PullRequestTable> {
                 label: 'Reviewers',
                 width: 110,
                 grow: 0.6,
-                transformFunction: (PullRequest pr) {
-                  return (pr.requestedReviewers ?? [])
+                renderFunction: (context, pr, out) {
+                  final reviewers = (pr.reviewers ?? [])
                       .map((reviewer) =>
                           formatUsername(reviewer, widget.googlers))
                       .join(', ');
+                  final requestedReviewers = (pr.requestedReviewers ?? [])
+                      .map((reviewer) =>
+                          formatUsername(reviewer, widget.googlers))
+                      .join(', ');
+                  return Wrap(
+                    children: [
+                      Text(reviewers, style: rowStyle(pr)),
+                      if (reviewers.isNotEmpty) const SizedBox(width: 5),
+                      Text(requestedReviewers, style: draftPrStyle),
+                    ],
+                  );
                 },
                 styleFunction: rowStyle,
                 validators: [

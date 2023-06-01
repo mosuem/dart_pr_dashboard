@@ -1,4 +1,5 @@
 import 'package:dart_pr_dashboard/src/misc.dart';
+import 'package:dart_pr_dashboard/src/pullrequest_table.dart';
 import 'package:github/github.dart';
 
 class SearchFilter {
@@ -58,10 +59,7 @@ class SearchFilter {
       case 'author':
         return formatUsername(pr.user, googlers);
       case 'reviewers':
-        return pr.requestedReviewers
-                ?.map((reviewer) => reviewer.login)
-                .join() ??
-            '';
+        return pr.allReviewers.map((reviewer) => reviewer.login).join();
       case 'author_association':
         return pr.authorAssociation;
       default:
