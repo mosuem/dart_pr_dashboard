@@ -151,7 +151,8 @@ extension PullRequestExtension on PullRequest {
     return authorAssociation!.toLowerCase();
   }
 
-  List<User> get allReviewers => [...?requestedReviewers, ...?reviewers];
+  List<User> get allReviewers =>
+      {...?reviewers, ...?requestedReviewers}.toList();
 
   bool authorIsGoogler(List<User> googlers) {
     final login = user?.login;
