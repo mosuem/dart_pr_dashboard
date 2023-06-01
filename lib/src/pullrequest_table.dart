@@ -1,17 +1,20 @@
 import 'dart:async';
 
-import 'package:dart_pr_dashboard/filter.dart';
-import 'package:dart_pr_dashboard/pull_request_utils.dart';
-import 'package:dart_pr_dashboard/src/misc.dart';
 import 'package:flutter/material.dart';
 import 'package:github/github.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:vtable/vtable.dart';
 
+import '../filter.dart';
+import '../pull_request_utils.dart';
+import 'misc.dart';
+
 class PullRequestTable extends StatefulWidget {
   final List<PullRequest> pullRequests;
   final List<User> googlers;
   final ValueNotifier<List<PullRequest>> filteredPRsController;
+
+  late final Set<String> googlerUsers;
 
   PullRequestTable({
     super.key,
@@ -21,6 +24,9 @@ class PullRequestTable extends StatefulWidget {
   }) : filteredPRsController = ValueNotifier<List<PullRequest>>(pullRequests) {
     filterStream.listen((filter) => filteredPRsController.value =
         pullRequests.where((pr) => filter?.appliesTo(pr) ?? true).toList());
+
+    googlerUsers =
+        googlers.map((googler) => googler.login).whereType<String>().toSet();
   }
 
   @override
@@ -40,7 +46,7 @@ class _PullRequestTableState extends State<PullRequestTable> {
           return VTable<PullRequest>(
             items: pullRequests,
             tableDescription: '${pullRequests.length} PRs',
-            rowHeight: 48.0,
+            rowHeight: 64.0,
             includeCopyToClipboardAction: true,
             onDoubleTap: (pr) => launchUrl(Uri.parse(pr.htmlUrl!)),
             columns: [
@@ -48,6 +54,7 @@ class _PullRequestTableState extends State<PullRequestTable> {
                 label: 'PR',
                 width: 200,
                 grow: 1,
+                alignment: Alignment.topLeft,
                 transformFunction: (pr) => pr.titleDisplay,
                 styleFunction: rowStyle,
               ),
@@ -55,6 +62,7 @@ class _PullRequestTableState extends State<PullRequestTable> {
                 label: 'Repo',
                 width: 80,
                 grow: 0.5,
+                alignment: Alignment.topLeft,
                 transformFunction: (PullRequest pr) =>
                     pr.base?.repo?.slug().fullName ?? '',
                 styleFunction: rowStyle,
@@ -63,7 +71,7 @@ class _PullRequestTableState extends State<PullRequestTable> {
                 label: 'Age (days)',
                 width: 50,
                 grow: 0.2,
-                alignment: Alignment.centerRight,
+                alignment: Alignment.topRight,
                 transformFunction: (PullRequest pr) => daysSince(pr.createdAt),
                 styleFunction: rowStyle,
                 compareFunction: (a, b) =>
@@ -74,7 +82,7 @@ class _PullRequestTableState extends State<PullRequestTable> {
                 label: 'Updated (days)',
                 width: 50,
                 grow: 0.2,
-                alignment: Alignment.centerRight,
+                alignment: Alignment.topRight,
                 transformFunction: (PullRequest pr) => daysSince(pr.updatedAt),
                 styleFunction: rowStyle,
                 compareFunction: (a, b) =>
@@ -85,6 +93,7 @@ class _PullRequestTableState extends State<PullRequestTable> {
                 label: 'Author',
                 width: 100,
                 grow: 0.4,
+                alignment: Alignment.topLeft,
                 transformFunction: (PullRequest pr) {
                   var text = formatUsername(pr.user, widget.googlers);
                   if (pr.authorAssociationDisplay != null) {
@@ -96,10 +105,11 @@ class _PullRequestTableState extends State<PullRequestTable> {
               ),
               VTableColumn(
                 label: 'Reviewers',
-                width: 110,
-                grow: 0.6,
+                width: 120,
+                grow: 0.7,
+                alignment: Alignment.topLeft,
                 renderFunction: (context, pr, out) {
-                  final reviewers = (pr.reviewers ?? [])
+                  var reviewers = (pr.reviewers ?? [])
                       .map((reviewer) =>
                           formatUsername(reviewer, widget.googlers))
                       .join(', ');
@@ -107,31 +117,43 @@ class _PullRequestTableState extends State<PullRequestTable> {
                       .map((reviewer) =>
                           formatUsername(reviewer, widget.googlers))
                       .join(', ');
-                  return Wrap(
-                    children: [
-                      Text(reviewers, style: rowStyle(pr)),
-                      if (reviewers.isNotEmpty) const SizedBox(width: 5),
-                      Text(requestedReviewers, style: draftPrStyle),
-                    ],
+                  if (reviewers.isNotEmpty && requestedReviewers.isNotEmpty) {
+                    reviewers = '$reviewers, ';
+                  }
+                  // TODO: Consider using a RichText widget here.
+                  return ClipRect(
+                    child: Wrap(
+                      children: [
+                        if (reviewers.isNotEmpty)
+                          Text(reviewers, style: rowStyle(pr)),
+                        if (requestedReviewers.isNotEmpty)
+                          Text(requestedReviewers, style: draftPrStyle),
+                      ],
+                    ),
                   );
                 },
                 styleFunction: rowStyle,
                 validators: [
-                  (pr) => needsReviewersValidator(widget.googlers, pr),
+                  (pr) => needsReviewersValidator(widget.googlerUsers, pr),
                 ],
               ),
               VTableColumn(
                 label: 'Labels',
                 width: 120,
                 grow: 0.8,
+                alignment: Alignment.topLeft,
                 transformFunction: (pr) =>
                     (pr.labels ?? []).map((e) => "'${e.name}'").join(', '),
                 renderFunction:
-                    (BuildContext context, PullRequest pr, String out) => Wrap(
-                  spacing: 4,
-                  runSpacing: 4,
-                  children: (pr.labels ?? []).map(LabelWidget.new).toList(),
-                ),
+                    (BuildContext context, PullRequest pr, String out) {
+                  return ClipRect(
+                    child: Wrap(
+                      spacing: 4,
+                      runSpacing: 4,
+                      children: (pr.labels ?? []).map(LabelWidget.new).toList(),
+                    ),
+                  );
+                },
               ),
             ],
           );
@@ -145,7 +167,7 @@ const TextStyle draftPrStyle = TextStyle(color: Colors.grey);
 
 TextStyle? rowStyle(PullRequest pr) {
   if (pr.draft == true) return draftPrStyle;
-  if (pr.copybaraPR) return draftPrStyle;
+  if (pr.authorIsCopybara) return draftPrStyle;
 
   return null;
 }
@@ -155,30 +177,6 @@ int compareDates(DateTime? a, DateTime? b) {
   if (a == null) return -1;
   if (b == null) return 1;
   return a.compareTo(b);
-}
-
-extension PullRequestExtension on PullRequest {
-  String get titleDisplay {
-    return draft == true ? '$title [draft]' : title ?? '';
-  }
-
-  String? get authorAssociationDisplay {
-    if (authorAssociation == null || authorAssociation == 'NONE') return null;
-    return authorAssociation!.toLowerCase();
-  }
-
-  List<User> get allReviewers =>
-      {...?reviewers, ...?requestedReviewers}.toList();
-
-  bool authorIsGoogler(List<User> googlers) {
-    final login = user?.login;
-    if (login == null) return false;
-
-    // TODO: cache the googler logins in a set
-    return googlers.any((googler) => googler.login == login);
-  }
-
-  bool get copybaraPR => user?.login == 'copybara-service[bot]';
 }
 
 class LabelWidget extends StatelessWidget {
@@ -217,7 +215,8 @@ class LabelWidget extends StatelessWidget {
 bool isLightColor(Color color) =>
     ThemeData.estimateBrightnessForColor(color) == Brightness.light;
 
-ValidationResult? needsReviewersValidator(List<User> googlers, PullRequest pr) {
+ValidationResult? needsReviewersValidator(
+    Set<String> googlers, PullRequest pr) {
   if (pr.allReviewers.isEmpty && !pr.authorIsGoogler(googlers)) {
     return ValidationResult.warning('PR has no reviewer assigned');
   }

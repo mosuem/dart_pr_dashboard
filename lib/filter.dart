@@ -1,6 +1,7 @@
-import 'package:dart_pr_dashboard/src/misc.dart';
-import 'package:dart_pr_dashboard/src/pullrequest_table.dart';
 import 'package:github/github.dart';
+
+import 'pull_request_utils.dart';
+import 'src/misc.dart';
 
 class SearchFilter {
   final List<User> googlers;
