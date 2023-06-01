@@ -3,6 +3,7 @@
 import 'dart:async';
 import 'dart:convert';
 
+import 'package:dart_pr_dashboard/pull_request_utils.dart';
 import 'package:dart_pr_dashboard/src/misc.dart';
 import 'package:dart_pr_dashboard/src/pullrequest_table.dart';
 import 'package:firebase_core/firebase_core.dart';
@@ -63,10 +64,7 @@ Future<void> readData() async {
     prs = value.map(
       (k, v) => MapEntry(
         RepositorySlug.full(k.replaceFirst(':', '/')),
-        (v as Map)
-            .values
-            .map((e) => PullRequest.fromJson(jsonDecode(e)))
-            .toList(),
+        (v as Map).values.map((e) => decodePR(e)).toList(),
       ),
     );
   } else {

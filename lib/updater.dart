@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 
+import 'package:dart_pr_dashboard/pull_request_utils.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter/material.dart';
 import 'package:github/github.dart';
@@ -138,7 +139,7 @@ Future<void> update(
 
         await github.pullRequests.list(slug, pages: 1000).forEach((pr) async {
           final list = await getReviewers(github, slug, pr);
-          pr.requestedReviewers?.addAll(list);
+          pr.reviewers = list;
           await addPullRequestToDatabase(prRef, pr, logger);
         });
         logger?.add('Done');
@@ -201,7 +202,7 @@ Future<void> addPullRequestToDatabase(
   StreamSink<String>? logger,
 ]) async {
   logger?.add('Handle PR ${pr.id} from ${pr.base!.repo!.slug().fullName}');
-  return await ref.child(pr.id!.toString()).set(jsonEncode(pr)).onError(
+  return await ref.child(pr.id!.toString()).set(encodePR(pr)).onError(
         (e, _) => throw Exception('Error writing PR: $e'),
       );
 }
