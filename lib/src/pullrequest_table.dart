@@ -1,3 +1,4 @@
+import 'package:dart_pr_dashboard/pull_request_utils.dart';
 import 'package:dart_pr_dashboard/src/misc.dart';
 import 'package:flutter/material.dart';
 import 'package:github/github.dart';
@@ -92,11 +93,22 @@ class _PullRequestTableState extends State<PullRequestTable> {
                 label: 'Reviewers',
                 width: 110,
                 grow: 0.6,
-                transformFunction: (PullRequest pr) {
-                  return (pr.requestedReviewers ?? [])
+                renderFunction: (context, pr, out) {
+                  final reviewers = (pr.reviewers ?? [])
                       .map((reviewer) =>
                           formatUsername(reviewer, widget.googlers))
                       .join(', ');
+                  final requestedReviewers = (pr.requestedReviewers ?? [])
+                      .map((reviewer) =>
+                          formatUsername(reviewer, widget.googlers))
+                      .join(', ');
+                  return Wrap(
+                    children: [
+                      Text(reviewers, style: rowStyle(pr)),
+                      if (reviewers.isNotEmpty) const SizedBox(width: 5),
+                      Text(requestedReviewers, style: draftPrStyle),
+                    ],
+                  );
                 },
                 styleFunction: rowStyle,
                 validators: [
@@ -150,7 +162,8 @@ extension PullRequestExtension on PullRequest {
     return authorAssociation!.toLowerCase();
   }
 
-  List<User> get reviewers => requestedReviewers ?? const [];
+  List<User> get allReviewers =>
+      {...?reviewers, ...?requestedReviewers}.toList();
 
   bool authorIsGoogler(List<User> googlers) {
     final login = user?.login;
@@ -200,7 +213,7 @@ bool isLightColor(Color color) =>
     ThemeData.estimateBrightnessForColor(color) == Brightness.light;
 
 ValidationResult? needsReviewersValidator(List<User> googlers, PullRequest pr) {
-  if (pr.reviewers.isEmpty && !pr.authorIsGoogler(googlers)) {
+  if (pr.allReviewers.isEmpty && !pr.authorIsGoogler(googlers)) {
     return ValidationResult.warning('PR has no reviewer assigned');
   }
 
@@ -220,7 +233,7 @@ ValidationResult? oldPrValidator(PullRequest pr) {
 }
 
 ValidationResult? probablyStaleValidator(PullRequest pr) {
-  if (pr.reviewers.isEmpty || pr.draft == true) return null;
+  if (pr.allReviewers.isEmpty || pr.draft == true) return null;
 
   final updatedAt = pr.updatedAt;
   if (updatedAt == null) return null;

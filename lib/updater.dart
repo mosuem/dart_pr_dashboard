@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 
+import 'package:dart_pr_dashboard/pull_request_utils.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter/material.dart';
 import 'package:github/github.dart';
@@ -19,7 +20,6 @@ class UpdaterPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final tokenController = TextEditingController();
-    final daysController = TextEditingController(text: '7');
 
     return Scaffold(
       appBar: AppBar(
@@ -42,11 +42,6 @@ class UpdaterPage extends StatelessWidget {
                 children: [
                   const Text('Github token'),
                   TextField(controller: tokenController),
-                  const Text('Update if older than # days:'),
-                  TextField(
-                    controller: daysController,
-                    keyboardType: TextInputType.number,
-                  ),
                   Padding(
                     padding: const EdgeInsets.all(8.0),
                     child: Row(
@@ -136,8 +131,11 @@ Future<void> update(
 
         updatingStatus.value = status;
 
-        await github.pullRequests.list(slug, pages: 1000).forEach(
-            (pr) async => await addPullRequestToDatabase(prRef, pr, logger));
+        await github.pullRequests.list(slug, pages: 1000).forEach((pr) async {
+          final list = await getReviewers(github, slug, pr);
+          pr.reviewers = list;
+          await addPullRequestToDatabase(prRef, pr, logger);
+        });
         logger?.add('Done');
       } else {
         final status =
@@ -154,6 +152,21 @@ Future<void> update(
 
   updatingStatus.value = null;
   updating.value = false;
+}
+
+Future<List<User>> getReviewers(
+  GitHub github,
+  RepositorySlug slug,
+  PullRequest pr,
+) async {
+  final reviewers = await github.pullRequests
+      .listReviews(slug, pr.number!)
+      .map((prReview) => prReview.user)
+      .toList();
+  // Deduplicate reviewers
+  final uniqueNames = reviewers.map((e) => e.login).whereType<String>().toSet();
+  reviewers.retainWhere((reviewer) => uniqueNames.remove(reviewer.login));
+  return reviewers;
 }
 
 Future<void> delete() async {
@@ -191,7 +204,7 @@ Future<void> addPullRequestToDatabase(
   StreamSink<String>? logger,
 ]) async {
   logger?.add('Handle PR ${pr.id} from ${pr.base!.repo!.slug().fullName}');
-  return await ref.child(pr.id!.toString()).set(jsonEncode(pr)).onError(
+  return await ref.child(pr.id!.toString()).set(encodePR(pr)).onError(
         (e, _) => throw Exception('Error writing PR: $e'),
       );
 }
