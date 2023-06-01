@@ -1,3 +1,6 @@
+import 'dart:async';
+
+import 'package:dart_pr_dashboard/filter.dart';
 import 'package:dart_pr_dashboard/pull_request_utils.dart';
 import 'package:dart_pr_dashboard/src/misc.dart';
 import 'package:flutter/material.dart';
@@ -6,14 +9,19 @@ import 'package:url_launcher/url_launcher.dart';
 import 'package:vtable/vtable.dart';
 
 class PullRequestTable extends StatefulWidget {
-  final Stream<List<PullRequest>> pullRequests;
+  final List<PullRequest> pullRequests;
   final List<User> googlers;
+  final ValueNotifier<List<PullRequest>> filteredPRsController;
 
-  const PullRequestTable({
+  PullRequestTable({
     super.key,
     required this.pullRequests,
     required this.googlers,
-  });
+    required Stream<SearchFilter?> filterStream,
+  }) : filteredPRsController = ValueNotifier<List<PullRequest>>(pullRequests) {
+    filterStream.listen((filter) => filteredPRsController.value =
+        pullRequests.where((pr) => filter?.appliesTo(pr) ?? true).toList());
+  }
 
   @override
   State<PullRequestTable> createState() => _PullRequestTableState();
@@ -23,18 +31,15 @@ class _PullRequestTableState extends State<PullRequestTable> {
   @override
   Widget build(BuildContext context) {
     return Expanded(
-      child: StreamBuilder(
-        stream: widget.pullRequests,
-        builder:
-            (BuildContext context, AsyncSnapshot<List<PullRequest>> snapshot) {
-          final rows = snapshot.data ?? [];
-
+      child: ValueListenableBuilder(
+        valueListenable: widget.filteredPRsController,
+        builder: (context, pullRequests, child) {
           // sort by age initially
-          rows.sort((a, b) => compareDates(b.createdAt, a.createdAt));
+          pullRequests.sort((a, b) => compareDates(b.createdAt, a.createdAt));
 
           return VTable<PullRequest>(
-            items: rows,
-            tableDescription: '${rows.length} PRs',
+            items: pullRequests,
+            tableDescription: '${pullRequests.length} PRs',
             rowHeight: 48.0,
             includeCopyToClipboardAction: true,
             onDoubleTap: (pr) => launchUrl(Uri.parse(pr.htmlUrl!)),

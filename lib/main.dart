@@ -16,9 +16,6 @@ import 'filter.dart';
 import 'firebase_options.dart';
 import 'updater.dart';
 
-Map<RepositorySlug, List<PullRequest>> prs = {};
-List<User> googlers = [];
-
 final ValueNotifier<bool> updating = ValueNotifier(false);
 final ValueNotifier<String?> updatingStatus = ValueNotifier(null);
 
@@ -39,8 +36,8 @@ List<({String filter, String name})> filters = [];
 Future<void> main() async {
   final Future<void> ready = () async {
     await Firebase.initializeApp(
-        options: DefaultFirebaseOptions.currentPlatform);
-    await readData();
+      options: DefaultFirebaseOptions.currentPlatform,
+    );
 
     // Init the dark mode value notifier.
     final prefs = await SharedPreferences.getInstance();
@@ -56,36 +53,32 @@ Future<void> main() async {
   runApp(MyApp(ready: ready));
 }
 
-Future<void> readData() async {
-  final ref = FirebaseDatabase.instance.ref();
-  final snapshot = await ref.child('pullrequests/data/').get();
-  if (snapshot.exists) {
-    final value = snapshot.value as Map<String, dynamic>;
-    prs = value.map(
-      (k, v) => MapEntry(
-        RepositorySlug.full(k.replaceFirst(':', '/')),
-        (v as Map).values.map((e) => decodePR(e)).toList(),
-      ),
-    );
-  } else {
-    print('No pullrequests available.');
-  }
+Stream<List<User>> streamGooglersFromFirebase() {
+  return FirebaseDatabase.instance
+      .ref()
+      .child('googlers/')
+      .onValue
+      .map((event) => event.snapshot)
+      .where((snapshot) => snapshot.exists)
+      .map((snapshot) => snapshot.value as String)
+      .map((value) =>
+          (jsonDecode(value) as List).map((e) => User.fromJson(e)).toList());
+}
 
-  final snapshot2 = await ref.child('googlers').get();
-  if (snapshot2.exists) {
-    final jsonEncoded = snapshot2.value as String;
-    googlers =
-        (jsonDecode(jsonEncoded) as List).map((e) => User.fromJson(e)).toList();
-  } else {
-    print('No googlers available.');
-  }
-
-  // --- For local development
-  // final readAsStringSync = File('tools/repodata.json').readAsStringSync();
-  // final Map jsonDecoded = jsonDecode(readAsStringSync);
-  // prs = jsonDecoded.map((k, v) => MapEntry(RepositorySlug.full(k),
-  //     (v as List).map((e) => PullRequest.fromJson(e)).toList()));
-  // googlers = [];
+Stream<List<PullRequest>> streamPullRequestsFromFirebase() {
+  return FirebaseDatabase.instance
+      .ref()
+      .child('pullrequests/data/')
+      .onValue
+      .map((event) => event.snapshot)
+      .where((snapshot) => snapshot.exists)
+      .map((snapshot) => snapshot.value as Map<String, dynamic>)
+      .map((value) => value.entries
+          .map(
+            (e) => (e.value as Map).values.map((e) => decodePR(e)).toList(),
+          )
+          .expand((list) => list)
+          .toList());
 }
 
 Future<List<({String name, String filter})>> loadFilters() async {
@@ -150,26 +143,22 @@ class MyHomePage extends StatefulWidget {
 class _MyHomePageState extends State<MyHomePage> {
   var controller = TextEditingController();
 
-  final filteredPRsController = StreamController<List<PullRequest>>.broadcast();
+  final googlersController = ValueNotifier<List<User>>([]);
+  final filterStream = StreamController<SearchFilter?>();
 
   @override
   void initState() {
     super.initState();
     controller.addListener(() {
-      final filter = SearchFilter.fromFilter(controller.text, googlers);
-      final filteredPrs = prs.values
-          .expand((prList) => prList)
-          .where((pr) => filter?.appliesTo(pr) ?? true)
-          .toList();
-      filteredPRsController.sink.add(filteredPrs);
+      final filter =
+          SearchFilter.fromFilter(controller.text, googlersController.value);
+      filterStream.sink.add(filter);
     });
-    WidgetsBinding.instance.addPostFrameCallback((_) => filteredPRsController
-        .sink
-        .add(prs.values.expand((prList) => prList).toList()));
   }
 
   @override
   Widget build(BuildContext context) {
+    print('BUILDING HOMEPAGE');
     return Scaffold(
       appBar: AppBar(
         title: const Text('Dart PR Dashboard'),
@@ -191,14 +180,8 @@ class _MyHomePageState extends State<MyHomePage> {
             builder: (BuildContext context, bool isUpdating, _) {
               return IconButton(
                 icon: const Icon(Icons.refresh),
-                onPressed: isUpdating
-                    ? null
-                    : () async {
-                        await updateStoredToken();
-                        await readData();
-                        filteredPRsController.add(
-                            prs.values.expand((prList) => prList).toList());
-                      },
+                onPressed:
+                    isUpdating ? null : () async => await updateStoredToken(),
               );
             },
           ),
@@ -207,13 +190,7 @@ class _MyHomePageState extends State<MyHomePage> {
             builder: (BuildContext context, bool isUpdating, _) {
               return IconButton(
                 icon: const Icon(Icons.delete),
-                onPressed: isUpdating
-                    ? null
-                    : () async {
-                        await delete();
-                        filteredPRsController.add(
-                            prs.values.expand((prList) => prList).toList());
-                      },
+                onPressed: isUpdating ? null : () async => await delete(),
               );
             },
           ),
@@ -243,8 +220,6 @@ class _MyHomePageState extends State<MyHomePage> {
                   builder: (BuildContext context) => UpdaterPage(),
                 ),
               );
-              filteredPRsController
-                  .add(prs.values.expand((prList) => prList).toList());
             },
           ),
           const SizedBox(width: 8),
@@ -290,16 +265,14 @@ class _MyHomePageState extends State<MyHomePage> {
                         (filter) => controller.text.contains(filter.filter)),
                   ],
                   onPressed: (index) {
-                    setState(() {
-                      final filter = filters[index];
-                      final text = filter.filter;
-                      if (controller.text.contains(text)) {
-                        controller.text = controller.text.replaceAll(text, '');
-                      } else {
-                        controller.text += ' $text';
-                      }
-                      controller.text = controller.text.trim();
-                    });
+                    final filter = filters[index];
+                    final text = filter.filter;
+                    if (controller.text.contains(text)) {
+                      controller.text = controller.text.replaceAll(text, '');
+                    } else {
+                      controller.text += ' $text';
+                    }
+                    controller.text = controller.text.trim();
                   },
                   children: [
                     ...filters.map((filter) {
@@ -358,9 +331,30 @@ class _MyHomePageState extends State<MyHomePage> {
                 child: const Text('Save filter'),
               ),
             ]),
-            PullRequestTable(
-              pullRequests: filteredPRsController.stream,
-              googlers: googlers,
+            StreamBuilder<List<PullRequest>>(
+              stream: streamPullRequestsFromFirebase(),
+              builder: (context, prSnapshot) {
+                if (!prSnapshot.hasData) {
+                  return const CircularProgressIndicator();
+                }
+                final pullRequests = prSnapshot.data!;
+                return StreamBuilder<List<User>>(
+                  stream: streamGooglersFromFirebase(),
+                  builder: (context, snapshot) {
+                    if (!snapshot.hasData) {
+                      return const CircularProgressIndicator();
+                    }
+                    final googlers = snapshot.data!;
+                    print(
+                        'Build Table with ${googlers.length} googlers and ${pullRequests.length} prs');
+                    return PullRequestTable(
+                      pullRequests: pullRequests,
+                      googlers: googlers,
+                      filterStream: filterStream.stream,
+                    );
+                  },
+                );
+              },
             ),
             ValueListenableBuilder(
               valueListenable: updatingStatus,
