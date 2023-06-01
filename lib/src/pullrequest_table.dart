@@ -33,13 +33,13 @@ class _PullRequestTableState extends State<PullRequestTable> {
     return Expanded(
       child: ValueListenableBuilder(
         valueListenable: widget.filteredPRsController,
-        builder: (context, rows, child) {
+        builder: (context, pullRequests, child) {
           // sort by age initially
-          rows.sort((a, b) => compareDates(b.createdAt, a.createdAt));
+          pullRequests.sort((a, b) => compareDates(b.createdAt, a.createdAt));
 
           return VTable<PullRequest>(
-            items: rows,
-            tableDescription: '${rows.length} PRs',
+            items: pullRequests,
+            tableDescription: '${pullRequests.length} PRs',
             rowHeight: 48.0,
             includeCopyToClipboardAction: true,
             onDoubleTap: (pr) => launchUrl(Uri.parse(pr.htmlUrl!)),
