@@ -9,7 +9,7 @@ import 'package:flutter/material.dart';
 import 'package:github/github.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-import 'filter.dart';
+import 'filter/filter.dart';
 import 'firebase_options.dart';
 import 'pull_request_utils.dart';
 import 'src/misc.dart';

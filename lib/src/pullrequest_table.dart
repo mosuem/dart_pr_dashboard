@@ -5,7 +5,7 @@ import 'package:github/github.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:vtable/vtable.dart';
 
-import '../filter.dart';
+import '../filter/filter.dart';
 import '../pull_request_utils.dart';
 import 'misc.dart';
 
