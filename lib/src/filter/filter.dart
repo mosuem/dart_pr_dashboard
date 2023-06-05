@@ -1,7 +1,10 @@
-import 'package:github/github.dart';
+import 'dart:convert';
 
-import '../pull_request_utils.dart';
-import '../src/misc.dart';
+import 'package:github/github.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+
+import '../../pull_request_utils.dart';
+import '../misc.dart';
 import 'matcher.dart';
 
 class SearchFilter {
@@ -79,4 +82,22 @@ class SearchFilter {
       }
     });
   }
+}
+
+Future<List<({String name, String filter})>> loadFilters() async {
+  final instance = await SharedPreferences.getInstance();
+  final List filters = json.decode(instance.getString('filters') ?? '[]');
+  return filters
+      .map((e) => (name: e['name'] as String, filter: e['filter'] as String))
+      .toList();
+}
+
+Future<void> saveFilter(({String name, String filter}) namedFilter) async {
+  final savedFilters = await loadFilters();
+  savedFilters.removeWhere((filter) => filter.name == namedFilter.name);
+  if (namedFilter.filter.isNotEmpty) savedFilters.add(namedFilter);
+  final instance = await SharedPreferences.getInstance();
+  final encodedFilters = json.encode(
+      savedFilters.map((e) => {'name': e.name, 'filter': e.filter}).toList());
+  await instance.setString('filters', encodedFilters);
 }
