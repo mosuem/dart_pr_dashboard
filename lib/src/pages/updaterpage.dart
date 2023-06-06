@@ -83,7 +83,6 @@ class UpdaterPage extends StatelessWidget {
 }
 
 Future<void> updateStoredToken(Updater updater) async {
-  //
   final prefs = await SharedPreferences.getInstance();
   final token = prefs.getString(githubToken);
   if (token == null) return;

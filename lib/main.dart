@@ -40,8 +40,8 @@ Future<void> initApp(ValueNotifier<bool> darkMode) async {
   streamGooglersFromFirebase();
 }
 
-void streamGooglersFromFirebase() {
-  FirebaseDatabase.instance
+Future<void> streamGooglersFromFirebase() async {
+  await FirebaseDatabase.instance
       .ref()
       .child('googlers/')
       .onValue
@@ -53,8 +53,8 @@ void streamGooglersFromFirebase() {
       .forEach((users) => googlers.value = users);
 }
 
-void streamPullRequestsFromFirebase() {
-  FirebaseDatabase.instance
+Future<void> streamPullRequestsFromFirebase() async {
+  await FirebaseDatabase.instance
       .ref()
       .child('pullrequests/data/')
       .onValue

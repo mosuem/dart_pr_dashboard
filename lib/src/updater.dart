@@ -6,12 +6,12 @@ class Updater {
 
   Updater();
 
-  open(String message) {
+  void open(String message) {
     status.value = true;
     text.value = message;
   }
 
-  close() {
+  void close() {
     status.value = false;
     text.value = null;
   }
