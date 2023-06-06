@@ -1,32 +1,28 @@
-import 'dart:async';
-
 import 'package:flutter/material.dart';
 import 'package:github/github.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:vtable/vtable.dart';
 
-import '../filter.dart';
 import '../pull_request_utils.dart';
+import 'filter/filter.dart';
 import 'misc.dart';
 
 class PullRequestTable extends StatefulWidget {
   final List<PullRequest> pullRequests;
   final List<User> googlers;
-  final ValueNotifier<List<PullRequest>> filteredPRsController;
-
+  final ValueNotifier<SearchFilter?> filterStream;
   late final Set<String> googlerUsers;
 
   PullRequestTable({
     super.key,
     required this.pullRequests,
     required this.googlers,
-    required Stream<SearchFilter?> filterStream,
-  }) : filteredPRsController = ValueNotifier<List<PullRequest>>(pullRequests) {
-    filterStream.listen((filter) => filteredPRsController.value =
-        pullRequests.where((pr) => filter?.appliesTo(pr) ?? true).toList());
-
+    required this.filterStream,
+  }) {
     googlerUsers =
         googlers.map((googler) => googler.login).whereType<String>().toSet();
+    // sort by age initially
+    pullRequests.sort((a, b) => compareDates(b.createdAt, a.createdAt));
   }
 
   @override
@@ -38,11 +34,11 @@ class _PullRequestTableState extends State<PullRequestTable> {
   Widget build(BuildContext context) {
     return Expanded(
       child: ValueListenableBuilder(
-        valueListenable: widget.filteredPRsController,
-        builder: (context, pullRequests, child) {
-          // sort by age initially
-          pullRequests.sort((a, b) => compareDates(b.createdAt, a.createdAt));
-
+        valueListenable: widget.filterStream,
+        builder: (context, filter, child) {
+          final pullRequests = widget.pullRequests
+              .where((pr) => filter?.appliesTo(pr) ?? true)
+              .toList();
           return VTable<PullRequest>(
             items: pullRequests,
             tableDescription: '${pullRequests.length} PRs',

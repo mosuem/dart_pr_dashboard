@@ -6,14 +6,16 @@ import 'package:flutter/material.dart';
 import 'package:github/github.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-import 'main.dart';
-import 'pull_request_utils.dart';
-import 'repos.dart';
+import '../../pull_request_utils.dart';
+import '../../repos.dart';
+import '../updater.dart';
 
 var githubToken = 'GITHUB_TOKEN';
 
 class UpdaterPage extends StatelessWidget {
-  UpdaterPage({super.key});
+  final Updater updater;
+
+  UpdaterPage({super.key, required this.updater});
 
   final StreamController<String> streamController = StreamController();
 
@@ -50,7 +52,7 @@ class UpdaterPage extends StatelessWidget {
                         TextButton(
                           onPressed: () async => await fetchGooglers(
                             tokenController.text,
-                            streamController.sink,
+                            updater,
                           ),
                           child: const Text('Fetch googlers'),
                         ),
@@ -80,23 +82,18 @@ class UpdaterPage extends StatelessWidget {
   }
 }
 
-Future<void> updateStoredToken() async {
-  //
+Future<void> updateStoredToken(Updater updater) async {
   final prefs = await SharedPreferences.getInstance();
   final token = prefs.getString(githubToken);
   if (token == null) return;
 
-  await update(token, -1);
+  await update(token, -1, updater);
 }
 
-Future<void> update(
-  String token,
-  int since, [
-  StreamSink<String>? logger,
-]) async {
+Future<void> update(String token, int since, Updater updater) async {
   final github = GitHub(auth: Authentication.withToken(token));
 
-  updating.value = true;
+  updater.status.value = true;
 
   final repositories =
       github.repositories.listOrganizationRepositories('dart-lang');
@@ -125,33 +122,28 @@ Future<void> update(
         final status =
             'Get PRs for ${slug.fullName} with ${github.rateLimitRemaining} '
             'remaining requests';
-        logger?.add(status);
         // Remove old PRs
         await prRef.remove();
 
-        updatingStatus.value = status;
+        updater.set(status);
 
         await github.pullRequests.list(slug, pages: 1000).forEach((pr) async {
           final list = await getReviewers(github, slug, pr);
           pr.reviewers = list;
-          await addPullRequestToDatabase(prRef, pr, logger);
+          await addPullRequestToDatabase(prRef, pr);
         });
-        logger?.add('Done');
       } else {
         final status =
             'Not updating ${slug.fullName} has been updated $daysSinceUpdate '
             'days ago';
-        logger?.add(status);
-        updatingStatus.value = status;
+        updater.set(status);
       }
     } catch (e) {
-      logger?.add(e.toString());
-      updatingStatus.value = e.toString();
+      updater.set(e.toString());
     }
   }
 
-  updatingStatus.value = null;
-  updating.value = false;
+  updater.close();
 }
 
 Future<List<User>> getReviewers(
@@ -169,33 +161,32 @@ Future<List<User>> getReviewers(
   return reviewers;
 }
 
-Future<void> delete() async {
-  updating.value = true;
+Future<void> delete(Updater updater) async {
+  updater.open('Deleting all entries');
 
-  updatingStatus.value = 'Deleting all entries';
   final ref = FirebaseDatabase.instance.ref('pullrequests');
   await ref.remove();
 
-  updatingStatus.value = null;
-  updating.value = false;
+  updater.close();
 }
 
-Future<void> fetchGooglers(String token, StreamSink<String> sink) async {
+Future<void> fetchGooglers(String token, Updater updater) async {
   final ref = FirebaseDatabase.instance.ref('googlers');
 
   final github = GitHub(auth: Authentication.withToken(token));
 
-  sink.add('Fetch googlers');
+  updater.open('Fetch googlers');
   final googlersGoogle =
       await github.organizations.listUsers('google').toList();
-  sink.add('Fetched ${googlersGoogle.length} googlers from "google"');
+  updater.set('Fetched ${googlersGoogle.length} googlers from "google"');
   final googlersDart =
       await github.organizations.listUsers('dart-lang').toList();
-  sink.add('Fetched ${googlersDart.length} googlers from "dart-lang"');
+  updater.set('Fetched ${googlersDart.length} googlers from "dart-lang"');
   final googlers = (googlersGoogle + googlersDart).toSet().toList();
-  sink.add('Store googlers in database');
+  updater.set('Store googlers in database');
   await ref.set(jsonEncode(googlers));
-  sink.add('Done!');
+  updater.set('Done!');
+  updater.close();
 }
 
 Future<void> addPullRequestToDatabase(

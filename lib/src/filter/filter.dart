@@ -1,7 +1,11 @@
-import 'package:github/github.dart';
+import 'dart:convert';
 
-import 'pull_request_utils.dart';
-import 'src/misc.dart';
+import 'package:github/github.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+
+import '../../pull_request_utils.dart';
+import '../misc.dart';
+import 'matcher.dart';
 
 class SearchFilter {
   final List<User> googlers;
@@ -80,36 +84,20 @@ class SearchFilter {
   }
 }
 
-abstract class SearchMatcher {
-  bool hasMatch(String match);
+Future<List<({String name, String filter})>> loadFilters() async {
+  final instance = await SharedPreferences.getInstance();
+  final List filters = json.decode(instance.getString('filters') ?? '[]');
+  return filters
+      .map((e) => (name: e['name'] as String, filter: e['filter'] as String))
+      .toList();
 }
 
-class RegexMatcher extends SearchMatcher {
-  final RegExp matcher;
-
-  RegexMatcher(this.matcher);
-
-  @override
-  bool hasMatch(String match) => matcher.hasMatch(match);
+Future<void> saveFilter(({String name, String filter}) namedFilter) async {
+  final savedFilters = await loadFilters();
+  savedFilters.removeWhere((filter) => filter.name == namedFilter.name);
+  if (namedFilter.filter.isNotEmpty) savedFilters.add(namedFilter);
+  final instance = await SharedPreferences.getInstance();
+  final encodedFilters = json.encode(
+      savedFilters.map((e) => {'name': e.name, 'filter': e.filter}).toList());
+  await instance.setString('filters', encodedFilters);
 }
-
-class RangeMatcher extends SearchMatcher {
-  final Range range;
-
-  RangeMatcher(this.range);
-
-  @override
-  bool hasMatch(String match) => range.contains(int.parse(match));
-}
-
-class Range {
-  final int min;
-  final int max;
-
-  Range(this.min, this.max);
-
-  contains(int parse) => min <= parse && parse <= max;
-}
-
-final searchPattern = RegExp(r"([^\s:]+):(?:'(.+?)'|(([^'][^\s]*)))\s?");
-final rangePattern = RegExp(r'(\d+)-(\d+)');
