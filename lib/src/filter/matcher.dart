@@ -26,7 +26,7 @@ class Range {
 
   Range(this.min, this.max);
 
-  contains(int parse) => min <= parse && parse <= max;
+  bool contains(int parse) => min <= parse && parse <= max;
 }
 
 final searchPattern = RegExp(r"([^\s:]+):(?:'(.+?)'|(([^'][^\s]*)))\s?");

@@ -48,10 +48,13 @@ class _MyHomePageState extends State<MyHomePage> {
   @override
   void initState() {
     super.initState();
+
     controller.addListener(() {
-      final filter =
-          SearchFilter.fromFilter(controller.text, googlersController.value);
-      filterStream.value = filter;
+      setState(() {
+        final filter =
+            SearchFilter.fromFilter(controller.text, googlersController.value);
+        filterStream.value = filter;
+      });
     });
   }
 

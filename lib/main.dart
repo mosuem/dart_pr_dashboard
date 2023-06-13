@@ -14,8 +14,8 @@ import 'firebase_options.dart';
 import 'src/filter/filter.dart';
 import 'src/pages/homepage.dart';
 
-ValueNotifier<List<PullRequest>> pullrequests = ValueNotifier([]);
-ValueNotifier<List<User>> googlers = ValueNotifier([]);
+final ValueNotifier<List<PullRequest>> pullrequests = ValueNotifier([]);
+final ValueNotifier<List<User>> googlers = ValueNotifier([]);
 
 Future<void> main() async {
   runApp(MyApp(initApp: initApp));
