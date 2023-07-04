@@ -100,7 +100,7 @@ class _IssueTableState extends State<IssueTable> {
                 grow: 0.7,
                 alignment: Alignment.topLeft,
                 renderFunction: (context, issue, out) {
-                  var reviewers = (issue.assignees ?? [])
+                  final reviewers = (issue.assignees ?? [])
                       .map((reviewer) =>
                           formatUsername(reviewer, widget.googlers))
                       .join(', ');
