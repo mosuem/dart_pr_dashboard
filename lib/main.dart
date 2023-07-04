@@ -10,11 +10,11 @@ import 'package:github/github.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../pull_request_utils.dart';
+import 'dashboard_type.dart';
 import 'firebase_options.dart';
 import 'issue_utils.dart';
 import 'src/filter/filter.dart';
 import 'src/pages/homepage.dart';
-import 'dashboard_type.dart';
 
 final ValueNotifier<List<Issue>> issues = ValueNotifier([]);
 final ValueNotifier<List<PullRequest>> pullrequests = ValueNotifier([]);

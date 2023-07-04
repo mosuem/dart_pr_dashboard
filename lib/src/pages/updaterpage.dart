@@ -6,10 +6,10 @@ import 'package:flutter/material.dart';
 import 'package:github/github.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../../dashboard_type.dart';
 import '../../issue_utils.dart';
 import '../../pull_request_utils.dart';
 import '../../repos.dart';
-import '../../dashboard_type.dart';
 import '../updater.dart';
 
 var githubToken = 'GITHUB_TOKEN';
