@@ -41,17 +41,26 @@ class _IssueTableState extends State<IssueTable> {
               .toList();
           return VTable<Issue>(
             items: pullRequests,
-            tableDescription: '${pullRequests.length} PRs',
+            tableDescription: '${pullRequests.length} issues',
             rowHeight: 64.0,
             includeCopyToClipboardAction: true,
             onDoubleTap: (issue) => launchUrl(Uri.parse(issue.htmlUrl)),
             columns: [
               VTableColumn(
-                label: 'PR',
+                label: 'Title',
                 width: 200,
                 grow: 1,
                 alignment: Alignment.topLeft,
                 transformFunction: (issue) => issue.title,
+                styleFunction: rowStyle,
+              ),
+              VTableColumn(
+                label: 'Repo',
+                width: 50,
+                grow: 0.4,
+                alignment: Alignment.topLeft,
+                transformFunction: (issue) =>
+                    issue.repositoryUrl?.split('/').last ?? '',
                 styleFunction: rowStyle,
               ),
               VTableColumn(
@@ -77,6 +86,40 @@ class _IssueTableState extends State<IssueTable> {
                 validators: [probablyStaleValidator],
               ),
               VTableColumn(
+                label: 'Author',
+                width: 100,
+                grow: 0.4,
+                alignment: Alignment.topLeft,
+                transformFunction: (Issue issue) =>
+                    formatUsername(issue.user, widget.googlers),
+                styleFunction: rowStyle,
+              ),
+              VTableColumn(
+                label: 'Assingees',
+                width: 120,
+                grow: 0.7,
+                alignment: Alignment.topLeft,
+                renderFunction: (context, issue, out) {
+                  var reviewers = (issue.assignees ?? [])
+                      .map((reviewer) =>
+                          formatUsername(reviewer, widget.googlers))
+                      .join(', ');
+                  // TODO: Consider using a RichText widget here.
+                  return ClipRect(
+                    child: Wrap(
+                      children: [
+                        if (reviewers.isNotEmpty)
+                          Text(reviewers, style: rowStyle(issue)),
+                      ],
+                    ),
+                  );
+                },
+                styleFunction: rowStyle,
+                validators: [
+                  (pr) => needsReviewersValidator(widget.googlerUsers, pr),
+                ],
+              ),
+              VTableColumn(
                 label: 'Labels',
                 width: 120,
                 grow: 0.8,
@@ -95,9 +138,9 @@ class _IssueTableState extends State<IssueTable> {
                 },
               ),
               VTableColumn(
-                label: 'Reactions',
-                width: 120,
-                grow: 0.8,
+                label: 'Upvotes',
+                width: 50,
+                grow: 0.2,
                 alignment: Alignment.topLeft,
                 transformFunction: (issue) => issue.upvotes.toString(),
                 compareFunction: (a, b) => a.upvotes.compareTo(b.upvotes),
@@ -168,6 +211,14 @@ ValidationResult? oldPrValidator(Issue issue) {
   final days = DateTime.now().difference(createdAt).inDays;
   if (days > 365) {
     return ValidationResult.warning('PR is objectively pretty old');
+  }
+
+  return null;
+}
+
+ValidationResult? needsReviewersValidator(Set<String> googlers, Issue issue) {
+  if ((issue.assignees ?? []).isEmpty && !issue.authorIsGoogler(googlers)) {
+    return ValidationResult.warning('PR has no reviewer assigned');
   }
 
   return null;

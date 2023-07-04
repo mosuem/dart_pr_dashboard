@@ -27,4 +27,6 @@ extension IssueUtils on Issue {
         (reactions?.plusOne ?? 0) -
         (reactions?.minusOne ?? 0);
   }
+
+  bool authorIsGoogler(Set<String> googlers) => googlers.contains(user?.login);
 }

@@ -84,6 +84,23 @@ class _MyHomePageState extends State<MyHomePage> {
               },
             ),
           ),
+          ValueListenableBuilder<DashboardType>(
+            valueListenable: widget.typeSwitch,
+            builder: (BuildContext context, DashboardType value, _) {
+              return DropdownButton<DashboardType>(
+                value: widget.typeSwitch.value,
+                items: DashboardType.values
+                    .map((e) => DropdownMenuItem<DashboardType>(
+                          value: e,
+                          child: Text(e.name),
+                        ))
+                    .toList(),
+                onChanged: (value) {
+                  if (value != null) widget.typeSwitch.value = value;
+                },
+              );
+            },
+          ),
           ValueListenableBuilder<bool>(
             valueListenable: widget.updater.status,
             builder: (BuildContext context, bool isUpdating, _) {
@@ -110,21 +127,6 @@ class _MyHomePageState extends State<MyHomePage> {
           const SizedBox.square(
             dimension: 24,
             child: VerticalDivider(),
-          ),
-          ValueListenableBuilder<DashboardType>(
-            valueListenable: widget.typeSwitch,
-            builder: (BuildContext context, DashboardType value, _) {
-              return TextButton(
-                onPressed: () {
-                  widget.typeSwitch.value = switch (widget.typeSwitch.value) {
-                    DashboardType.pullrequests => DashboardType.issues,
-                    DashboardType.issues => DashboardType.pullrequests,
-                    DashboardType.none => DashboardType.pullrequests,
-                  };
-                },
-                child: Text(value.name),
-              );
-            },
           ),
           ValueListenableBuilder<bool>(
             valueListenable: widget.darkModeSwitch,

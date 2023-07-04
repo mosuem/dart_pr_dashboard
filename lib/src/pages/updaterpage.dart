@@ -88,11 +88,30 @@ Future<void> updateStoredToken(Updater updater, DashboardType type) async {
   final prefs = await SharedPreferences.getInstance();
   final token = prefs.getString(githubToken);
   if (token == null) return;
-  if (type == DashboardType.pullrequests) await updatePRs(token, -1, updater);
-  if (type == DashboardType.issues) await updateIssues(token, -1, updater);
+  if (type == DashboardType.pullrequests) {
+    await update(
+      'pullrequests',
+      token,
+      updater,
+      saveAllPullrequests,
+    );
+  }
+  if (type == DashboardType.issues) {
+    await update(
+      'issues',
+      token,
+      updater,
+      saveAllIssues,
+    );
+  }
 }
 
-Future<void> updatePRs(String token, int since, Updater updater) async {
+Future<void> update(
+  String dashboardType,
+  String token,
+  Updater updater,
+  Future<void> Function(GitHub, RepositorySlug, DatabaseReference) saveAll,
+) async {
   final github = GitHub(auth: Authentication.withToken(token));
 
   updater.status.value = true;
@@ -107,7 +126,7 @@ Future<void> updatePRs(String token, int since, Updater updater) async {
   for (final slug in [...dartLangRepos, ...includeRepos]) {
     try {
       final ref = FirebaseDatabase.instance
-          .ref('pullrequests/last_updated/${slug.owner}:${slug.name}');
+          .ref('$dashboardType/last_updated/${slug.owner}:${slug.name}');
       final lastUpdatedSnapshot = await ref.get();
       DateTime lastUpdated;
       if (lastUpdatedSnapshot.exists) {
@@ -117,23 +136,18 @@ Future<void> updatePRs(String token, int since, Updater updater) async {
         lastUpdated = DateTime.fromMillisecondsSinceEpoch(0);
       }
       final daysSinceUpdate = DateTime.now().difference(lastUpdated).inDays;
-      if (daysSinceUpdate > since) {
-        final prRef = FirebaseDatabase.instance
-            .ref('pullrequests/data/${slug.owner}:${slug.name}');
+      if (daysSinceUpdate > -1) {
+        final oldRef = FirebaseDatabase.instance
+            .ref('$dashboardType/data/${slug.owner}:${slug.name}');
         await ref.set(DateTime.now().millisecondsSinceEpoch);
         final status =
-            'Get PRs for ${slug.fullName} with ${github.rateLimitRemaining} '
+            'Get $dashboardType for ${slug.fullName} with ${github.rateLimitRemaining} '
             'remaining requests';
-        // Remove old PRs
-        await prRef.remove();
+        await oldRef.remove();
 
         updater.set(status);
 
-        await github.pullRequests.list(slug, pages: 1000).forEach((pr) async {
-          final list = await getReviewers(github, slug, pr);
-          pr.reviewers = list;
-          await addPullRequestToDatabase(prRef, pr);
-        });
+        await saveAll(github, slug, oldRef);
       } else {
         final status =
             'Not updating ${slug.fullName} has been updated $daysSinceUpdate '
@@ -148,59 +162,20 @@ Future<void> updatePRs(String token, int since, Updater updater) async {
   updater.close();
 }
 
-Future<void> updateIssues(String token, int since, Updater updater) async {
-  final github = GitHub(auth: Authentication.withToken(token));
+Future<void> saveAllPullrequests(
+    GitHub github, RepositorySlug slug, DatabaseReference oldRef) async {
+  await github.pullRequests.list(slug, pages: 1000).forEach((pr) async {
+    final list = await getReviewers(github, slug, pr);
+    pr.reviewers = list;
+    await addPullRequestToDatabase(oldRef, pr);
+  });
+}
 
-  updater.status.value = true;
-
-  // final repositories =
-  //     github.repositories.listOrganizationRepositories('dart-lang');
-  // final dartLangRepos = await repositories
-  //     .where((repository) => !repository.archived)
-  //     .map((repository) => repository.slug())
-  //     .where((slug) => !exludeRepos.contains(slug))
-  //     .toList();
-  // for (final slug in [...dartLangRepos, ...includeRepos]) {
-  for (final slug in [RepositorySlug.full('grpc/grpc-dart')]) {
-    try {
-      final ref = FirebaseDatabase.instance
-          .ref('issues/last_updated/${slug.owner}:${slug.name}');
-      final lastUpdatedSnapshot = await ref.get();
-      DateTime lastUpdated;
-      if (lastUpdatedSnapshot.exists) {
-        final value = lastUpdatedSnapshot.value as int;
-        lastUpdated = DateTime.fromMillisecondsSinceEpoch(value);
-      } else {
-        lastUpdated = DateTime.fromMillisecondsSinceEpoch(0);
-      }
-      final daysSinceUpdate = DateTime.now().difference(lastUpdated).inDays;
-      if (daysSinceUpdate > since) {
-        final prRef = FirebaseDatabase.instance
-            .ref('issues/data/${slug.owner}:${slug.name}');
-        await ref.set(DateTime.now().millisecondsSinceEpoch);
-        final status =
-            'Get Issues for ${slug.fullName} with ${github.rateLimitRemaining} '
-            'remaining requests';
-        // Remove old PRs
-        await prRef.remove();
-
-        updater.set(status);
-
-        await github.issues.listByRepo(slug, perPage: 1000).forEach((pr) async {
-          if (pr.pullRequest == null) await addIssueToDatabase(prRef, pr);
-        });
-      } else {
-        final status =
-            'Not updating ${slug.fullName} has been updated $daysSinceUpdate '
-            'days ago';
-        updater.set(status);
-      }
-    } catch (e) {
-      updater.set(e.toString());
-    }
-  }
-
-  updater.close();
+Future<void> saveAllIssues(
+    GitHub github, RepositorySlug slug, DatabaseReference prRef) async {
+  await github.issues.listByRepo(slug, perPage: 1000).forEach((pr) async {
+    if (pr.pullRequest == null) await addIssueToDatabase(prRef, pr);
+  });
 }
 
 Future<List<User>> getReviewers(
