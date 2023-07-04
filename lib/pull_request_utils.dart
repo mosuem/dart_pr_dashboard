@@ -1,7 +1,8 @@
 import 'dart:convert';
 
-import 'package:dart_pr_dashboard/src/misc.dart';
 import 'package:github/github.dart';
+
+import 'src/misc.dart';
 
 extension ReviewerAddition on PullRequest {
   static final _values = Expando<List<User>>();
