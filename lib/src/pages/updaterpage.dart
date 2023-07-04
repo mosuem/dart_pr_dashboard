@@ -6,8 +6,10 @@ import 'package:flutter/material.dart';
 import 'package:github/github.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../../issue_utils.dart';
 import '../../pull_request_utils.dart';
 import '../../repos.dart';
+import '../../table_type.dart';
 import '../updater.dart';
 
 var githubToken = 'GITHUB_TOKEN';
@@ -82,15 +84,15 @@ class UpdaterPage extends StatelessWidget {
   }
 }
 
-Future<void> updateStoredToken(Updater updater) async {
+Future<void> updateStoredToken(Updater updater, TableType type) async {
   final prefs = await SharedPreferences.getInstance();
   final token = prefs.getString(githubToken);
   if (token == null) return;
-
-  await update(token, -1, updater);
+  if (type == TableType.pullrequests) await updatePRs(token, -1, updater);
+  if (type == TableType.issues) await updateIssues(token, -1, updater);
 }
 
-Future<void> update(String token, int since, Updater updater) async {
+Future<void> updatePRs(String token, int since, Updater updater) async {
   final github = GitHub(auth: Authentication.withToken(token));
 
   updater.status.value = true;
@@ -131,6 +133,62 @@ Future<void> update(String token, int since, Updater updater) async {
           final list = await getReviewers(github, slug, pr);
           pr.reviewers = list;
           await addPullRequestToDatabase(prRef, pr);
+        });
+      } else {
+        final status =
+            'Not updating ${slug.fullName} has been updated $daysSinceUpdate '
+            'days ago';
+        updater.set(status);
+      }
+    } catch (e) {
+      updater.set(e.toString());
+    }
+  }
+
+  updater.close();
+}
+
+Future<void> updateIssues(String token, int since, Updater updater) async {
+  print('Updating issues');
+  final github = GitHub(auth: Authentication.withToken(token));
+
+  updater.status.value = true;
+
+  final repositories =
+      github.repositories.listOrganizationRepositories('dart-lang');
+  final dartLangRepos = await repositories
+      .where((repository) => !repository.archived)
+      .map((repository) => repository.slug())
+      .where((slug) => !exludeRepos.contains(slug))
+      .toList();
+  // for (final slug in [...dartLangRepos, ...includeRepos]) {
+  for (final slug in [RepositorySlug.full('grpc/grpc-dart')]) {
+    try {
+      final ref = FirebaseDatabase.instance
+          .ref('issues/last_updated/${slug.owner}:${slug.name}');
+      final lastUpdatedSnapshot = await ref.get();
+      DateTime lastUpdated;
+      if (lastUpdatedSnapshot.exists) {
+        final value = lastUpdatedSnapshot.value as int;
+        lastUpdated = DateTime.fromMillisecondsSinceEpoch(value);
+      } else {
+        lastUpdated = DateTime.fromMillisecondsSinceEpoch(0);
+      }
+      final daysSinceUpdate = DateTime.now().difference(lastUpdated).inDays;
+      if (daysSinceUpdate > since) {
+        final prRef = FirebaseDatabase.instance
+            .ref('issues/data/${slug.owner}:${slug.name}');
+        await ref.set(DateTime.now().millisecondsSinceEpoch);
+        final status =
+            'Get Issues for ${slug.fullName} with ${github.rateLimitRemaining} '
+            'remaining requests';
+        // Remove old PRs
+        await prRef.remove();
+
+        updater.set(status);
+
+        await github.issues.listByRepo(slug, perPage: 1000).forEach((pr) async {
+          if (pr.pullRequest == null) await addIssueToDatabase(prRef, pr);
         });
       } else {
         final status =
@@ -196,6 +254,18 @@ Future<void> addPullRequestToDatabase(
 ]) async {
   logger?.add('Handle PR ${pr.id} from ${pr.base!.repo!.slug().fullName}');
   return await ref.child(pr.id!.toString()).set(encodePR(pr)).onError(
+        (e, _) => throw Exception('Error writing PR: $e'),
+      );
+}
+
+Future<void> addIssueToDatabase(
+  DatabaseReference ref,
+  Issue issue, [
+  StreamSink<String>? logger,
+]) async {
+  logger?.add(
+      'Handle Issue ${issue.id} from ${issue.repository!.slug().fullName}');
+  return await ref.child(issue.id.toString()).set(encodeIssue(issue)).onError(
         (e, _) => throw Exception('Error writing PR: $e'),
       );
 }

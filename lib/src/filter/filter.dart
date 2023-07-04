@@ -3,8 +3,6 @@ import 'dart:convert';
 import 'package:github/github.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-import '../../pull_request_utils.dart';
-import '../misc.dart';
 import 'matcher.dart';
 
 class SearchFilter {
@@ -45,36 +43,9 @@ class SearchFilter {
     return SearchFilter._(filterByColumn, googlers);
   }
 
-  String? getMatch(PullRequest pr, String columnName) {
-    switch (columnName) {
-      case 'repo':
-        return pr.base?.repo?.slug().name;
-      case 'number':
-        return pr.number?.toString();
-      case 'title':
-        return pr.title;
-      case 'created_at':
-        return daysSince(pr.createdAt);
-      case 'updated_at':
-        return daysSince(pr.updatedAt);
-      case 'labels':
-        return pr.labels?.map((e) => e.name).join('');
-      case 'state':
-        return pr.state;
-      case 'author':
-        return formatUsername(pr.user, googlers);
-      case 'reviewers':
-        return pr.allReviewers.map((reviewer) => reviewer.login).join();
-      case 'author_association':
-        return pr.authorAssociation;
-      default:
-        return null;
-    }
-  }
-
-  bool appliesTo(PullRequest pr) {
+  bool appliesTo<T>(T pr, String? Function(T, String, List<User>) getMatch) {
     return _filterByColumn.entries.every((entry) {
-      final match = getMatch(pr, entry.key);
+      final match = getMatch(pr, entry.key, googlers);
       if (match != null) {
         return entry.value.every((matcher) => matcher.hasMatch(match));
       } else {

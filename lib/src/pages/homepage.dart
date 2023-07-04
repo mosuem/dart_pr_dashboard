@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:github/github.dart';
 
+import '../../table_type.dart';
 import '../filter/filter.dart';
+import '../issue_table.dart';
 import '../misc.dart';
 import '../pullrequest_table.dart';
 import '../updater.dart';
@@ -21,18 +23,24 @@ List<({String filter, String name})> filters = [];
 
 class MyHomePage extends StatefulWidget {
   final ValueNotifier<bool> darkModeSwitch;
+  final ValueNotifier<TableType> typeSwitch;
+  final TableType type;
 
   final Updater updater = Updater();
 
   final ValueNotifier<List<User>> googlers;
 
   final ValueNotifier<List<PullRequest>> pullrequests;
+  final ValueNotifier<List<Issue>> issues;
 
   MyHomePage({
     super.key,
     required this.darkModeSwitch,
     required this.pullrequests,
     required this.googlers,
+    required this.type,
+    required this.issues,
+    required this.typeSwitch,
   });
 
   @override
@@ -83,7 +91,8 @@ class _MyHomePageState extends State<MyHomePage> {
                 icon: const Icon(Icons.refresh),
                 onPressed: isUpdating
                     ? null
-                    : () async => await updateStoredToken(widget.updater),
+                    : () async =>
+                        await updateStoredToken(widget.updater, widget.type),
               );
             },
           ),
@@ -101,6 +110,21 @@ class _MyHomePageState extends State<MyHomePage> {
           const SizedBox.square(
             dimension: 24,
             child: VerticalDivider(),
+          ),
+          ValueListenableBuilder<TableType>(
+            valueListenable: widget.typeSwitch,
+            builder: (BuildContext context, TableType value, _) {
+              return TextButton(
+                onPressed: () {
+                  widget.typeSwitch.value = switch (widget.typeSwitch.value) {
+                    TableType.pullrequests => TableType.issues,
+                    TableType.issues => TableType.pullrequests,
+                    TableType.none => TableType.pullrequests,
+                  };
+                },
+                child: Text(value.name),
+              );
+            },
           ),
           ValueListenableBuilder<bool>(
             valueListenable: widget.darkModeSwitch,
@@ -237,21 +261,18 @@ class _MyHomePageState extends State<MyHomePage> {
                 child: const Text('Save filter'),
               ),
             ]),
-            ValueListenableBuilder(
-              valueListenable: widget.pullrequests,
-              builder: (context, pullrequests, child) {
-                return ValueListenableBuilder(
-                  valueListenable: widget.googlers,
-                  builder: (context, googlers, child) {
-                    return PullRequestTable(
-                      pullRequests: pullrequests,
-                      googlers: googlers,
-                      filterStream: filterStream,
-                    );
-                  },
-                );
-              },
-            ),
+            if (widget.type == TableType.pullrequests)
+              PullRequests(
+                pullrequests: widget.pullrequests,
+                googlers: widget.googlers,
+                filterStream: filterStream,
+              )
+            else if (widget.type == TableType.issues)
+              Issues(
+                issues: widget.issues,
+                googlers: widget.googlers,
+                filterStream: filterStream,
+              ),
             ValueListenableBuilder<String?>(
               valueListenable: widget.updater.text,
               builder: (BuildContext context, String? value, _) {
@@ -268,6 +289,70 @@ class _MyHomePageState extends State<MyHomePage> {
           ],
         ),
       ),
+    );
+  }
+}
+
+class PullRequests extends StatelessWidget {
+  const PullRequests({
+    super.key,
+    required this.filterStream,
+    required this.pullrequests,
+    required this.googlers,
+  });
+
+  final ValueNotifier<List<PullRequest>> pullrequests;
+  final ValueNotifier<List<User>> googlers;
+  final ValueNotifier<SearchFilter?> filterStream;
+
+  @override
+  Widget build(BuildContext context) {
+    return ValueListenableBuilder(
+      valueListenable: pullrequests,
+      builder: (context, pullrequests, child) {
+        return ValueListenableBuilder(
+          valueListenable: googlers,
+          builder: (context, googlers, child) {
+            return PullRequestTable(
+              pullRequests: pullrequests,
+              googlers: googlers,
+              filterStream: filterStream,
+            );
+          },
+        );
+      },
+    );
+  }
+}
+
+class Issues extends StatelessWidget {
+  const Issues({
+    super.key,
+    required this.filterStream,
+    required this.issues,
+    required this.googlers,
+  });
+
+  final ValueNotifier<List<Issue>> issues;
+  final ValueNotifier<List<User>> googlers;
+  final ValueNotifier<SearchFilter?> filterStream;
+
+  @override
+  Widget build(BuildContext context) {
+    return ValueListenableBuilder(
+      valueListenable: issues,
+      builder: (context, issues, child) {
+        return ValueListenableBuilder(
+          valueListenable: googlers,
+          builder: (context, googlers, child) {
+            return IssueTable(
+              issues: issues,
+              googlers: googlers,
+              filterStream: filterStream,
+            );
+          },
+        );
+      },
     );
   }
 }

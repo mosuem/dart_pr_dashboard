@@ -37,7 +37,7 @@ class _PullRequestTableState extends State<PullRequestTable> {
         valueListenable: widget.filterStream,
         builder: (context, filter, child) {
           final pullRequests = widget.pullRequests
-              .where((pr) => filter?.appliesTo(pr) ?? true)
+              .where((pr) => filter?.appliesTo(pr, getMatch) ?? true)
               .toList();
           return VTable<PullRequest>(
             items: pullRequests,
