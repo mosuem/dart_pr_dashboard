@@ -168,13 +168,6 @@ TextStyle? rowStyle(PullRequest pr) {
   return null;
 }
 
-int compareDates(DateTime? a, DateTime? b) {
-  if (a == b) return 0;
-  if (a == null) return -1;
-  if (b == null) return 1;
-  return a.compareTo(b);
-}
-
 class LabelWidget extends StatelessWidget {
   final IssueLabel label;
 
@@ -207,9 +200,6 @@ class LabelWidget extends StatelessWidget {
     );
   }
 }
-
-bool isLightColor(Color color) =>
-    ThemeData.estimateBrightnessForColor(color) == Brightness.light;
 
 ValidationResult? needsReviewersValidator(
     Set<String> googlers, PullRequest pr) {
