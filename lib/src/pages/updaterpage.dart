@@ -9,7 +9,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../../issue_utils.dart';
 import '../../pull_request_utils.dart';
 import '../../repos.dart';
-import '../../table_type.dart';
+import '../../dashboard_type.dart';
 import '../updater.dart';
 
 var githubToken = 'GITHUB_TOKEN';
@@ -84,12 +84,12 @@ class UpdaterPage extends StatelessWidget {
   }
 }
 
-Future<void> updateStoredToken(Updater updater, TableType type) async {
+Future<void> updateStoredToken(Updater updater, DashboardType type) async {
   final prefs = await SharedPreferences.getInstance();
   final token = prefs.getString(githubToken);
   if (token == null) return;
-  if (type == TableType.pullrequests) await updatePRs(token, -1, updater);
-  if (type == TableType.issues) await updateIssues(token, -1, updater);
+  if (type == DashboardType.pullrequests) await updatePRs(token, -1, updater);
+  if (type == DashboardType.issues) await updateIssues(token, -1, updater);
 }
 
 Future<void> updatePRs(String token, int since, Updater updater) async {
@@ -149,18 +149,17 @@ Future<void> updatePRs(String token, int since, Updater updater) async {
 }
 
 Future<void> updateIssues(String token, int since, Updater updater) async {
-  print('Updating issues');
   final github = GitHub(auth: Authentication.withToken(token));
 
   updater.status.value = true;
 
-  final repositories =
-      github.repositories.listOrganizationRepositories('dart-lang');
-  final dartLangRepos = await repositories
-      .where((repository) => !repository.archived)
-      .map((repository) => repository.slug())
-      .where((slug) => !exludeRepos.contains(slug))
-      .toList();
+  // final repositories =
+  //     github.repositories.listOrganizationRepositories('dart-lang');
+  // final dartLangRepos = await repositories
+  //     .where((repository) => !repository.archived)
+  //     .map((repository) => repository.slug())
+  //     .where((slug) => !exludeRepos.contains(slug))
+  //     .toList();
   // for (final slug in [...dartLangRepos, ...includeRepos]) {
   for (final slug in [RepositorySlug.full('grpc/grpc-dart')]) {
     try {

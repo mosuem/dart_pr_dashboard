@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:github/github.dart';
 
-import '../../table_type.dart';
+import '../../dashboard_type.dart';
 import '../filter/filter.dart';
 import '../issue_table.dart';
 import '../misc.dart';
@@ -23,8 +23,8 @@ List<({String filter, String name})> filters = [];
 
 class MyHomePage extends StatefulWidget {
   final ValueNotifier<bool> darkModeSwitch;
-  final ValueNotifier<TableType> typeSwitch;
-  final TableType type;
+  final ValueNotifier<DashboardType> typeSwitch;
+  final DashboardType type;
 
   final Updater updater = Updater();
 
@@ -111,15 +111,15 @@ class _MyHomePageState extends State<MyHomePage> {
             dimension: 24,
             child: VerticalDivider(),
           ),
-          ValueListenableBuilder<TableType>(
+          ValueListenableBuilder<DashboardType>(
             valueListenable: widget.typeSwitch,
-            builder: (BuildContext context, TableType value, _) {
+            builder: (BuildContext context, DashboardType value, _) {
               return TextButton(
                 onPressed: () {
                   widget.typeSwitch.value = switch (widget.typeSwitch.value) {
-                    TableType.pullrequests => TableType.issues,
-                    TableType.issues => TableType.pullrequests,
-                    TableType.none => TableType.pullrequests,
+                    DashboardType.pullrequests => DashboardType.issues,
+                    DashboardType.issues => DashboardType.pullrequests,
+                    DashboardType.none => DashboardType.pullrequests,
                   };
                 },
                 child: Text(value.name),
@@ -261,13 +261,13 @@ class _MyHomePageState extends State<MyHomePage> {
                 child: const Text('Save filter'),
               ),
             ]),
-            if (widget.type == TableType.pullrequests)
+            if (widget.type == DashboardType.pullrequests)
               PullRequests(
                 pullrequests: widget.pullrequests,
                 googlers: widget.googlers,
                 filterStream: filterStream,
               )
-            else if (widget.type == TableType.issues)
+            else if (widget.type == DashboardType.issues)
               Issues(
                 issues: widget.issues,
                 googlers: widget.googlers,

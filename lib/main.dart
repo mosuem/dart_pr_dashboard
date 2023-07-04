@@ -14,7 +14,7 @@ import 'firebase_options.dart';
 import 'issue_utils.dart';
 import 'src/filter/filter.dart';
 import 'src/pages/homepage.dart';
-import 'table_type.dart';
+import 'dashboard_type.dart';
 
 final ValueNotifier<List<Issue>> issues = ValueNotifier([]);
 final ValueNotifier<List<PullRequest>> pullrequests = ValueNotifier([]);
@@ -24,7 +24,7 @@ Future<void> main() async {
   runApp(MyApp(initApp: initApp));
 }
 
-Future<void> initApp(ValueNotifier<bool> darkMode, TableType type) async {
+Future<void> initApp(ValueNotifier<bool> darkMode, DashboardType type) async {
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
@@ -39,9 +39,9 @@ Future<void> initApp(ValueNotifier<bool> darkMode, TableType type) async {
   final localFilters = await loadFilters();
   filters = [...presetFilters, ...localFilters];
 
-  if (type == TableType.issues) streamIssuesFromFirebase();
-  if (type == TableType.pullrequests) streamPullRequestsFromFirebase();
-  if (type != TableType.none) streamGooglersFromFirebase();
+  if (type == DashboardType.issues) streamIssuesFromFirebase();
+  if (type == DashboardType.pullrequests) streamPullRequestsFromFirebase();
+  if (type != DashboardType.none) streamGooglersFromFirebase();
 }
 
 Future<void> streamGooglersFromFirebase() async {
@@ -98,17 +98,18 @@ Future<void> streamIssuesFromFirebase() async {
 }
 
 class MyApp extends StatelessWidget {
-  final ValueNotifier<TableType> tableType = ValueNotifier(TableType.issues);
+  final ValueNotifier<DashboardType> typeSwitch =
+      ValueNotifier(DashboardType.issues);
   final ValueNotifier<bool> darkMode = ValueNotifier(true);
 
-  final Future<void> Function(ValueNotifier<bool>, TableType type) initApp;
+  final Future<void> Function(ValueNotifier<bool>, DashboardType type) initApp;
 
   MyApp({required this.initApp, super.key});
 
   @override
   Widget build(BuildContext context) {
-    return ValueListenableBuilder<TableType>(
-      valueListenable: tableType,
+    return ValueListenableBuilder<DashboardType>(
+      valueListenable: typeSwitch,
       builder: (context, type, child) {
         return FutureBuilder(
           future: initApp(darkMode, type),
@@ -127,7 +128,7 @@ class MyApp extends StatelessWidget {
                 return MaterialApp(
                   home: MyHomePage(
                     darkModeSwitch: darkMode,
-                    typeSwitch: tableType,
+                    typeSwitch: typeSwitch,
                     googlers: googlers,
                     pullrequests: pullrequests,
                     issues: issues,

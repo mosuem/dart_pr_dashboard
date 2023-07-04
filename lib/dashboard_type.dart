@@ -1,4 +1,4 @@
-enum TableType {
+enum DashboardType {
   pullrequests,
   issues,
   none;
