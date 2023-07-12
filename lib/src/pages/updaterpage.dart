@@ -6,6 +6,8 @@ import 'package:flutter/material.dart';
 import 'package:github/github.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../../dashboard_type.dart';
+import '../../issue_utils.dart';
 import '../../pull_request_utils.dart';
 import '../../repos.dart';
 import '../updater.dart';
@@ -82,15 +84,34 @@ class UpdaterPage extends StatelessWidget {
   }
 }
 
-Future<void> updateStoredToken(Updater updater) async {
+Future<void> updateStoredToken(Updater updater, DashboardType type) async {
   final prefs = await SharedPreferences.getInstance();
   final token = prefs.getString(githubToken);
   if (token == null) return;
-
-  await update(token, -1, updater);
+  if (type == DashboardType.pullrequests) {
+    await update(
+      'pullrequests',
+      token,
+      updater,
+      saveAllPullrequests,
+    );
+  }
+  if (type == DashboardType.issues) {
+    await update(
+      'issues',
+      token,
+      updater,
+      saveAllIssues,
+    );
+  }
 }
 
-Future<void> update(String token, int since, Updater updater) async {
+Future<void> update(
+  String dashboardType,
+  String token,
+  Updater updater,
+  Future<void> Function(GitHub, RepositorySlug, DatabaseReference) saveAll,
+) async {
   final github = GitHub(auth: Authentication.withToken(token));
 
   updater.status.value = true;
@@ -105,7 +126,7 @@ Future<void> update(String token, int since, Updater updater) async {
   for (final slug in [...dartLangRepos, ...includeRepos]) {
     try {
       final ref = FirebaseDatabase.instance
-          .ref('pullrequests/last_updated/${slug.owner}:${slug.name}');
+          .ref('$dashboardType/last_updated/${slug.owner}:${slug.name}');
       final lastUpdatedSnapshot = await ref.get();
       DateTime lastUpdated;
       if (lastUpdatedSnapshot.exists) {
@@ -115,23 +136,18 @@ Future<void> update(String token, int since, Updater updater) async {
         lastUpdated = DateTime.fromMillisecondsSinceEpoch(0);
       }
       final daysSinceUpdate = DateTime.now().difference(lastUpdated).inDays;
-      if (daysSinceUpdate > since) {
-        final prRef = FirebaseDatabase.instance
-            .ref('pullrequests/data/${slug.owner}:${slug.name}');
+      if (daysSinceUpdate > -1) {
+        final oldRef = FirebaseDatabase.instance
+            .ref('$dashboardType/data/${slug.owner}:${slug.name}');
         await ref.set(DateTime.now().millisecondsSinceEpoch);
         final status =
-            'Get PRs for ${slug.fullName} with ${github.rateLimitRemaining} '
+            'Get $dashboardType for ${slug.fullName} with ${github.rateLimitRemaining} '
             'remaining requests';
-        // Remove old PRs
-        await prRef.remove();
+        await oldRef.remove();
 
         updater.set(status);
 
-        await github.pullRequests.list(slug, pages: 1000).forEach((pr) async {
-          final list = await getReviewers(github, slug, pr);
-          pr.reviewers = list;
-          await addPullRequestToDatabase(prRef, pr);
-        });
+        await saveAll(github, slug, oldRef);
       } else {
         final status =
             'Not updating ${slug.fullName} has been updated $daysSinceUpdate '
@@ -144,6 +160,22 @@ Future<void> update(String token, int since, Updater updater) async {
   }
 
   updater.close();
+}
+
+Future<void> saveAllPullrequests(
+    GitHub github, RepositorySlug slug, DatabaseReference oldRef) async {
+  await github.pullRequests.list(slug, pages: 1000).forEach((pr) async {
+    final list = await getReviewers(github, slug, pr);
+    pr.reviewers = list;
+    await addPullRequestToDatabase(oldRef, pr);
+  });
+}
+
+Future<void> saveAllIssues(
+    GitHub github, RepositorySlug slug, DatabaseReference prRef) async {
+  await github.issues.listByRepo(slug, perPage: 1000).forEach((pr) async {
+    if (pr.pullRequest == null) await addIssueToDatabase(prRef, pr);
+  });
 }
 
 Future<List<User>> getReviewers(
@@ -196,6 +228,18 @@ Future<void> addPullRequestToDatabase(
 ]) async {
   logger?.add('Handle PR ${pr.id} from ${pr.base!.repo!.slug().fullName}');
   return await ref.child(pr.id!.toString()).set(encodePR(pr)).onError(
+        (e, _) => throw Exception('Error writing PR: $e'),
+      );
+}
+
+Future<void> addIssueToDatabase(
+  DatabaseReference ref,
+  Issue issue, [
+  StreamSink<String>? logger,
+]) async {
+  logger?.add(
+      'Handle Issue ${issue.id} from ${issue.repository!.slug().fullName}');
+  return await ref.child(issue.id.toString()).set(encodeIssue(issue)).onError(
         (e, _) => throw Exception('Error writing PR: $e'),
       );
 }

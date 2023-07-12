@@ -10,10 +10,13 @@ import 'package:github/github.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../pull_request_utils.dart';
+import 'dashboard_type.dart';
 import 'firebase_options.dart';
+import 'issue_utils.dart';
 import 'src/filter/filter.dart';
 import 'src/pages/homepage.dart';
 
+final ValueNotifier<List<Issue>> issues = ValueNotifier([]);
 final ValueNotifier<List<PullRequest>> pullrequests = ValueNotifier([]);
 final ValueNotifier<List<User>> googlers = ValueNotifier([]);
 
@@ -21,7 +24,7 @@ Future<void> main() async {
   runApp(MyApp(initApp: initApp));
 }
 
-Future<void> initApp(ValueNotifier<bool> darkMode) async {
+Future<void> initApp(ValueNotifier<bool> darkMode, DashboardType type) async {
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
@@ -36,8 +39,9 @@ Future<void> initApp(ValueNotifier<bool> darkMode) async {
   final localFilters = await loadFilters();
   filters = [...presetFilters, ...localFilters];
 
-  streamPullRequestsFromFirebase();
-  streamGooglersFromFirebase();
+  if (type == DashboardType.issues) streamIssuesFromFirebase();
+  if (type == DashboardType.pullrequests) streamPullRequestsFromFirebase();
+  if (type != DashboardType.none) streamGooglersFromFirebase();
 }
 
 Future<void> streamGooglersFromFirebase() async {
@@ -61,47 +65,80 @@ Future<void> streamPullRequestsFromFirebase() async {
       .map((event) => event.snapshot)
       .where((snapshot) => snapshot.exists)
       .map((snapshot) => snapshot.value as Map<String, dynamic>)
-      .map((value) => value.entries
+      .map((reposToPRs) => reposToPRs.entries
           .map(
-            (e) => (e.value as Map).values.map((e) => decodePR(e)).toList(),
+            (repoToPRs) => (repoToPRs.value as Map)
+                .values
+                .map((prJson) => decodePR(prJson))
+                .toList(),
           )
-          .expand((list) => list)
+          .expand((listOfPRs) => listOfPRs)
           .toList())
       .forEach((prs) => pullrequests.value = prs);
 }
 
+Future<void> streamIssuesFromFirebase() async {
+  await FirebaseDatabase.instance
+      .ref()
+      .child('issues/data/')
+      .onValue
+      .map((event) => event.snapshot)
+      .where((snapshot) => snapshot.exists)
+      .map((snapshot) => snapshot.value as Map<String, dynamic>)
+      .map((reposToIssues) => reposToIssues.entries
+          .map(
+            (repoToIssues) => (repoToIssues.value as Map)
+                .values
+                .map((issueJson) => decodeIssue(issueJson))
+                .toList(),
+          )
+          .expand((listOfIssues) => listOfIssues)
+          .toList())
+      .forEach((issue) => issues.value = issue);
+}
+
 class MyApp extends StatelessWidget {
+  final ValueNotifier<DashboardType> typeSwitch =
+      ValueNotifier(DashboardType.none);
   final ValueNotifier<bool> darkMode = ValueNotifier(true);
 
-  final Future<void> Function(ValueNotifier<bool>) initApp;
+  final Future<void> Function(ValueNotifier<bool>, DashboardType type) initApp;
 
   MyApp({required this.initApp, super.key});
 
   @override
   Widget build(BuildContext context) {
-    return FutureBuilder(
-      future: initApp(darkMode),
-      builder: (BuildContext context, AsyncSnapshot<void> snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Center(child: CircularProgressIndicator());
-        }
+    return ValueListenableBuilder<DashboardType>(
+      valueListenable: typeSwitch,
+      builder: (context, type, child) {
+        return FutureBuilder(
+          future: initApp(darkMode, type),
+          builder: (BuildContext context, AsyncSnapshot<void> snapshot) {
+            if (snapshot.connectionState == ConnectionState.waiting) {
+              return const Center(child: CircularProgressIndicator());
+            }
 
-        if (snapshot.hasError) {
-          return Center(child: Text('${snapshot.error?.toString()}'));
-        }
+            if (snapshot.hasError) {
+              return Center(child: Text('${snapshot.error?.toString()}'));
+            }
 
-        return ValueListenableBuilder<bool>(
-          valueListenable: darkMode,
-          builder: (BuildContext context, bool value, _) {
-            return MaterialApp(
-              home: MyHomePage(
-                darkModeSwitch: darkMode,
-                googlers: googlers,
-                pullrequests: pullrequests,
-              ),
-              title: 'Dart PR Dashboard',
-              theme: value ? ThemeData.dark() : ThemeData.light(),
-              debugShowCheckedModeBanner: false,
+            return ValueListenableBuilder<bool>(
+              valueListenable: darkMode,
+              builder: (BuildContext context, bool value, _) {
+                return MaterialApp(
+                  home: MyHomePage(
+                    darkModeSwitch: darkMode,
+                    typeSwitch: typeSwitch,
+                    googlers: googlers,
+                    pullrequests: pullrequests,
+                    issues: issues,
+                    type: type,
+                  ),
+                  title: 'Dart PR Dashboard',
+                  theme: value ? ThemeData.dark() : ThemeData.light(),
+                  debugShowCheckedModeBanner: false,
+                );
+              },
             );
           },
         );

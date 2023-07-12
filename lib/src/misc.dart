@@ -1,3 +1,4 @@
+import 'package:flutter/material.dart';
 import 'package:github/github.dart';
 
 final noTime = DateTime.fromMillisecondsSinceEpoch(0);
@@ -16,3 +17,13 @@ String formatUsername(User? user, List<User> googlers) {
       : '';
   return '@${user?.login ?? ''}$googlerMark';
 }
+
+int compareDates(DateTime? a, DateTime? b) {
+  if (a == b) return 0;
+  if (a == null) return -1;
+  if (b == null) return 1;
+  return a.compareTo(b);
+}
+
+bool isLightColor(Color color) =>
+    ThemeData.estimateBrightnessForColor(color) == Brightness.light;

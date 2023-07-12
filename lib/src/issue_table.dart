@@ -3,64 +3,64 @@ import 'package:github/github.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:vtable/vtable.dart';
 
-import '../pull_request_utils.dart';
+import '../issue_utils.dart';
 import 'filter/filter.dart';
 import 'misc.dart';
 
-class PullRequestTable extends StatefulWidget {
-  final List<PullRequest> pullRequests;
+class IssueTable extends StatefulWidget {
+  final List<Issue> issues;
   final List<User> googlers;
   final ValueNotifier<SearchFilter?> filterStream;
   late final Set<String> googlerUsers;
 
-  PullRequestTable({
+  IssueTable({
     super.key,
-    required this.pullRequests,
+    required this.issues,
     required this.googlers,
     required this.filterStream,
   }) {
     googlerUsers =
         googlers.map((googler) => googler.login).whereType<String>().toSet();
     // sort by age initially
-    pullRequests.sort((a, b) => compareDates(b.createdAt, a.createdAt));
+    issues.sort((a, b) => compareDates(b.createdAt, a.createdAt));
   }
 
   @override
-  State<PullRequestTable> createState() => _PullRequestTableState();
+  State<IssueTable> createState() => _IssueTableState();
 }
 
-class _PullRequestTableState extends State<PullRequestTable> {
+class _IssueTableState extends State<IssueTable> {
   @override
   Widget build(BuildContext context) {
     return Expanded(
       child: ValueListenableBuilder(
         valueListenable: widget.filterStream,
         builder: (context, filter, child) {
-          final pullRequests = widget.pullRequests
-              .where((pr) => filter?.appliesTo(pr, getMatch) ?? true)
+          final pullRequests = widget.issues
+              .where((issue) => filter?.appliesTo(issue, getMatch) ?? true)
               .toList();
-          return VTable<PullRequest>(
+          return VTable<Issue>(
             items: pullRequests,
-            tableDescription: '${pullRequests.length} PRs',
+            tableDescription: '${pullRequests.length} issues',
             rowHeight: 64.0,
             includeCopyToClipboardAction: true,
-            onDoubleTap: (pr) => launchUrl(Uri.parse(pr.htmlUrl!)),
+            onDoubleTap: (issue) => launchUrl(Uri.parse(issue.htmlUrl)),
             columns: [
               VTableColumn(
-                label: 'PR',
+                label: 'Title',
                 width: 200,
                 grow: 1,
                 alignment: Alignment.topLeft,
-                transformFunction: (pr) => pr.titleDisplay,
+                transformFunction: (issue) => issue.title,
                 styleFunction: rowStyle,
               ),
               VTableColumn(
                 label: 'Repo',
-                width: 80,
-                grow: 0.5,
+                width: 50,
+                grow: 0.4,
                 alignment: Alignment.topLeft,
-                transformFunction: (PullRequest pr) =>
-                    pr.base?.repo?.slug().fullName ?? '',
+                transformFunction: (issue) =>
+                    issue.repositoryUrl?.split('/').last ?? '',
                 styleFunction: rowStyle,
               ),
               VTableColumn(
@@ -68,88 +68,78 @@ class _PullRequestTableState extends State<PullRequestTable> {
                 width: 50,
                 grow: 0.2,
                 alignment: Alignment.topRight,
-                transformFunction: (PullRequest pr) => daysSince(pr.createdAt),
+                transformFunction: (Issue issue) => daysSince(issue.createdAt),
                 styleFunction: rowStyle,
                 compareFunction: (a, b) =>
                     compareDates(b.createdAt, a.createdAt),
-                validators: [oldPrValidator],
+                validators: [oldIssueValidator],
               ),
               VTableColumn(
                 label: 'Updated (days)',
                 width: 50,
                 grow: 0.2,
                 alignment: Alignment.topRight,
-                transformFunction: (PullRequest pr) => daysSince(pr.updatedAt),
+                transformFunction: (Issue issue) => daysSince(issue.updatedAt),
                 styleFunction: rowStyle,
                 compareFunction: (a, b) =>
                     compareDates(b.updatedAt, a.updatedAt),
-                validators: [probablyStaleValidator],
               ),
               VTableColumn(
                 label: 'Author',
                 width: 100,
                 grow: 0.4,
                 alignment: Alignment.topLeft,
-                transformFunction: (PullRequest pr) {
-                  var text = formatUsername(pr.user, widget.googlers);
-                  if (pr.authorAssociationDisplay != null) {
-                    text = '$text, ${pr.authorAssociationDisplay}';
-                  }
-                  return text;
-                },
+                transformFunction: (Issue issue) =>
+                    formatUsername(issue.user, widget.googlers),
                 styleFunction: rowStyle,
               ),
               VTableColumn(
-                label: 'Reviewers',
+                label: 'Assingees',
                 width: 120,
                 grow: 0.7,
                 alignment: Alignment.topLeft,
-                renderFunction: (context, pr, out) {
-                  var reviewers = (pr.reviewers ?? [])
+                renderFunction: (context, issue, out) {
+                  final reviewers = (issue.assignees ?? [])
                       .map((reviewer) =>
                           formatUsername(reviewer, widget.googlers))
                       .join(', ');
-                  final requestedReviewers = (pr.requestedReviewers ?? [])
-                      .map((reviewer) =>
-                          formatUsername(reviewer, widget.googlers))
-                      .join(', ');
-                  if (reviewers.isNotEmpty && requestedReviewers.isNotEmpty) {
-                    reviewers = '$reviewers, ';
-                  }
                   // TODO: Consider using a RichText widget here.
                   return ClipRect(
                     child: Wrap(
                       children: [
                         if (reviewers.isNotEmpty)
-                          Text(reviewers, style: rowStyle(pr)),
-                        if (requestedReviewers.isNotEmpty)
-                          Text(requestedReviewers, style: draftPrStyle),
+                          Text(reviewers, style: rowStyle(issue)),
                       ],
                     ),
                   );
                 },
                 styleFunction: rowStyle,
-                validators: [
-                  (pr) => needsReviewersValidator(widget.googlerUsers, pr),
-                ],
               ),
               VTableColumn(
                 label: 'Labels',
                 width: 120,
                 grow: 0.8,
                 alignment: Alignment.topLeft,
-                transformFunction: (pr) =>
-                    (pr.labels ?? []).map((e) => "'${e.name}'").join(', '),
+                transformFunction: (issue) =>
+                    (issue.labels).map((e) => "'${e.name}'").join(', '),
                 renderFunction:
-                    (BuildContext context, PullRequest pr, String out) {
+                    (BuildContext context, Issue issue, String out) {
                   return ClipRect(
                     child: Wrap(
                       spacing: 4,
                       runSpacing: 4,
-                      children: (pr.labels ?? []).map(LabelWidget.new).toList(),
+                      children: (issue.labels).map(LabelWidget.new).toList(),
                     ),
                   );
                 },
+              ),
+              VTableColumn(
+                label: 'Upvotes',
+                width: 50,
+                grow: 0.2,
+                alignment: Alignment.topLeft,
+                transformFunction: (issue) => issue.upvotes.toString(),
+                compareFunction: (a, b) => a.upvotes.compareTo(b.upvotes),
               ),
             ],
           );
@@ -161,9 +151,8 @@ class _PullRequestTableState extends State<PullRequestTable> {
 
 const TextStyle draftPrStyle = TextStyle(color: Colors.grey);
 
-TextStyle? rowStyle(PullRequest pr) {
-  if (pr.draft == true) return draftPrStyle;
-  if (pr.authorIsCopybara) return draftPrStyle;
+TextStyle? rowStyle(Issue issue) {
+  if (issue.draft == true) return draftPrStyle;
 
   return null;
 }
@@ -201,36 +190,13 @@ class LabelWidget extends StatelessWidget {
   }
 }
 
-ValidationResult? needsReviewersValidator(
-    Set<String> googlers, PullRequest pr) {
-  if (pr.allReviewers.isEmpty && !pr.authorIsGoogler(googlers)) {
-    return ValidationResult.warning('PR has no reviewer assigned');
-  }
-
-  return null;
-}
-
-ValidationResult? oldPrValidator(PullRequest pr) {
-  final createdAt = pr.createdAt;
+ValidationResult? oldIssueValidator(Issue issue) {
+  final createdAt = issue.createdAt;
   if (createdAt == null) return null;
 
   final days = DateTime.now().difference(createdAt).inDays;
   if (days > 365) {
-    return ValidationResult.warning('PR is objectively pretty old');
-  }
-
-  return null;
-}
-
-ValidationResult? probablyStaleValidator(PullRequest pr) {
-  if (pr.allReviewers.isEmpty || pr.draft == true) return null;
-
-  final updatedAt = pr.updatedAt;
-  if (updatedAt == null) return null;
-
-  final days = DateTime.now().difference(updatedAt).inDays;
-  if (days > 30) {
-    return ValidationResult.warning('PR not updated recently');
+    return ValidationResult.warning('Issue is objectively pretty old');
   }
 
   return null;
