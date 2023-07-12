@@ -72,7 +72,7 @@ class _IssueTableState extends State<IssueTable> {
                 styleFunction: rowStyle,
                 compareFunction: (a, b) =>
                     compareDates(b.createdAt, a.createdAt),
-                validators: [oldPrValidator],
+                validators: [oldIssueValidator],
               ),
               VTableColumn(
                 label: 'Updated (days)',
@@ -83,7 +83,6 @@ class _IssueTableState extends State<IssueTable> {
                 styleFunction: rowStyle,
                 compareFunction: (a, b) =>
                     compareDates(b.updatedAt, a.updatedAt),
-                validators: [probablyStaleValidator],
               ),
               VTableColumn(
                 label: 'Author',
@@ -115,9 +114,6 @@ class _IssueTableState extends State<IssueTable> {
                   );
                 },
                 styleFunction: rowStyle,
-                validators: [
-                  (pr) => needsReviewersValidator(widget.googlerUsers, pr),
-                ],
               ),
               VTableColumn(
                 label: 'Labels',
@@ -194,35 +190,13 @@ class LabelWidget extends StatelessWidget {
   }
 }
 
-ValidationResult? oldPrValidator(Issue issue) {
+ValidationResult? oldIssueValidator(Issue issue) {
   final createdAt = issue.createdAt;
   if (createdAt == null) return null;
 
   final days = DateTime.now().difference(createdAt).inDays;
   if (days > 365) {
-    return ValidationResult.warning('PR is objectively pretty old');
-  }
-
-  return null;
-}
-
-ValidationResult? needsReviewersValidator(Set<String> googlers, Issue issue) {
-  if ((issue.assignees ?? []).isEmpty && !issue.authorIsGoogler(googlers)) {
-    return ValidationResult.warning('PR has no reviewer assigned');
-  }
-
-  return null;
-}
-
-ValidationResult? probablyStaleValidator(Issue issue) {
-  if (issue.draft == true) return null;
-
-  final updatedAt = issue.updatedAt;
-  if (updatedAt == null) return null;
-
-  final days = DateTime.now().difference(updatedAt).inDays;
-  if (days > 30) {
-    return ValidationResult.warning('PR not updated recently');
+    return ValidationResult.warning('Issue is objectively pretty old');
   }
 
   return null;
