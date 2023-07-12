@@ -78,7 +78,7 @@ class _MyHomePageState extends State<MyHomePage>
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Dart PR Dashboard'),
+        title: const Text('Dart Triage Dashboard'),
         actions: [
           SizedBox.square(
             dimension: 16,
