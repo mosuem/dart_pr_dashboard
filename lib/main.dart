@@ -99,7 +99,7 @@ Future<void> streamIssuesFromFirebase() async {
 
 class MyApp extends StatelessWidget {
   final ValueNotifier<DashboardType> typeSwitch =
-      ValueNotifier(DashboardType.issues);
+      ValueNotifier(DashboardType.none);
   final ValueNotifier<bool> darkMode = ValueNotifier(true);
 
   final Future<void> Function(ValueNotifier<bool>, DashboardType type) initApp;

@@ -274,7 +274,9 @@ class _MyHomePageState extends State<MyHomePage> {
                 issues: widget.issues,
                 googlers: widget.googlers,
                 filterStream: filterStream,
-              ),
+              )
+            else
+              const Center(child: Text('Select a table type to display.')),
             ValueListenableBuilder<String?>(
               valueListenable: widget.updater.text,
               builder: (BuildContext context, String? value, _) {
