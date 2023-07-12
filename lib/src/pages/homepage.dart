@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:github/github.dart';
 
 import '../../dashboard_type.dart';
+import '../../model.dart';
 import '../filter/filter.dart';
 import '../issue_table.dart';
 import '../misc.dart';
@@ -19,43 +20,41 @@ const presetFilters = [
   (name: 'Not authored by a bot', filter: r'author:.*(?<!\[bot\])$'),
 ];
 
-List<({String filter, String name})> filters = [];
-
 class MyHomePage extends StatefulWidget {
-  final ValueNotifier<bool> darkModeSwitch;
-  final ValueNotifier<DashboardType> typeSwitch;
-  final DashboardType type;
-
+  final AppModel appModel;
   final Updater updater = Updater();
 
-  final ValueNotifier<List<User>> googlers;
-
-  final ValueNotifier<List<PullRequest>> pullrequests;
-  final ValueNotifier<List<Issue>> issues;
-
   MyHomePage({
+    required this.appModel,
     super.key,
-    required this.darkModeSwitch,
-    required this.pullrequests,
-    required this.googlers,
-    required this.type,
-    required this.issues,
-    required this.typeSwitch,
   });
 
   @override
   State<MyHomePage> createState() => _MyHomePageState();
 }
 
-class _MyHomePageState extends State<MyHomePage> {
+class _MyHomePageState extends State<MyHomePage>
+    with SingleTickerProviderStateMixin {
   var controller = TextEditingController();
+  late TabController tabController;
 
   final googlersController = ValueNotifier<List<User>>([]);
   final filterStream = ValueNotifier<SearchFilter?>(null);
 
+  List<({String filter, String name})> filters = [...presetFilters];
+
   @override
   void initState() {
     super.initState();
+
+    () async {
+      final localFilters = await loadFilters();
+      setState(() {
+        filters = [...presetFilters, ...localFilters];
+      });
+    }();
+
+    tabController = TabController(vsync: this, length: 2);
 
     controller.addListener(() {
       setState(() {
@@ -65,6 +64,15 @@ class _MyHomePageState extends State<MyHomePage> {
       });
     });
   }
+
+  @override
+  void dispose() {
+    tabController.dispose();
+
+    super.dispose();
+  }
+
+  ValueNotifier<bool> get darkModeSwitch => widget.appModel.darkMode;
 
   @override
   Widget build(BuildContext context) {
@@ -84,23 +92,6 @@ class _MyHomePageState extends State<MyHomePage> {
               },
             ),
           ),
-          ValueListenableBuilder<DashboardType>(
-            valueListenable: widget.typeSwitch,
-            builder: (BuildContext context, DashboardType value, _) {
-              return DropdownButton<DashboardType>(
-                value: widget.typeSwitch.value,
-                items: DashboardType.values
-                    .map((e) => DropdownMenuItem<DashboardType>(
-                          value: e,
-                          child: Text(e.name),
-                        ))
-                    .toList(),
-                onChanged: (value) {
-                  if (value != null) widget.typeSwitch.value = value;
-                },
-              );
-            },
-          ),
           ValueListenableBuilder<bool>(
             valueListenable: widget.updater.status,
             builder: (BuildContext context, bool isUpdating, _) {
@@ -108,8 +99,12 @@ class _MyHomePageState extends State<MyHomePage> {
                 icon: const Icon(Icons.refresh),
                 onPressed: isUpdating
                     ? null
-                    : () async =>
-                        await updateStoredToken(widget.updater, widget.type),
+                    : () async {
+                        final type = tabController.index == 0
+                            ? DashboardType.pullrequests
+                            : DashboardType.issues;
+                        await updateStoredToken(widget.updater, type);
+                      },
               );
             },
           ),
@@ -129,14 +124,14 @@ class _MyHomePageState extends State<MyHomePage> {
             child: VerticalDivider(),
           ),
           ValueListenableBuilder<bool>(
-            valueListenable: widget.darkModeSwitch,
+            valueListenable: darkModeSwitch,
             builder: (BuildContext context, bool value, _) {
               return IconButton(
                 icon: Icon(value
                     ? Icons.light_mode_outlined
                     : Icons.dark_mode_outlined),
                 onPressed: () async {
-                  widget.darkModeSwitch.value = !widget.darkModeSwitch.value;
+                  darkModeSwitch.value = !darkModeSwitch.value;
                 },
               );
             },
@@ -156,6 +151,13 @@ class _MyHomePageState extends State<MyHomePage> {
           ),
           const SizedBox(width: 8),
         ],
+        bottom: TabBar(
+          controller: tabController,
+          tabs: const [
+            Tab(text: 'Pull Requests'),
+            Tab(text: 'Issues'),
+          ],
+        ),
       ),
       body: Padding(
         padding: const EdgeInsets.only(left: 16, right: 16, bottom: 8),
@@ -186,97 +188,102 @@ class _MyHomePageState extends State<MyHomePage> {
                 ],
               ),
             ),
-            Row(children: [
-              ConstrainedBox(
-                constraints: const BoxConstraints(maxHeight: 32.0),
-                child: ToggleButtons(
-                  borderRadius: BorderRadius.circular(6),
-                  textStyle: Theme.of(context).textTheme.titleMedium,
-                  isSelected: [
-                    ...filters.map(
-                        (filter) => controller.text.contains(filter.filter)),
-                  ],
-                  onPressed: (index) {
-                    final filter = filters[index];
-                    final text = filter.filter;
-                    if (controller.text.contains(text)) {
-                      controller.text = controller.text.replaceAll(text, '');
-                    } else {
-                      controller.text += ' $text';
-                    }
-                    controller.text = controller.text.trim();
-                  },
-                  children: [
-                    ...filters.map((filter) {
-                      return Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 10),
-                        child: Text(filter.name),
-                      );
-                    }),
-                  ],
-                ),
-              ),
-              const Spacer(),
-              TextButton(
-                onPressed: () async {
-                  final filterNameController = TextEditingController();
-
-                  final cancelButton = TextButton(
-                    child: const Text('Cancel'),
-                    onPressed: () => Navigator.pop(context, false),
-                  );
-
-                  final saveButton = TextButton(
-                    child: const Text('Save'),
-                    onPressed: () async {
-                      await saveFilter((
-                        name: filterNameController.text,
-                        filter: controller.text,
-                      ));
-                      // ignore: use_build_context_synchronously
-                      Navigator.pop(context, true);
+            Row(
+              children: [
+                ConstrainedBox(
+                  constraints: const BoxConstraints(maxHeight: 32.0),
+                  child: ToggleButtons(
+                    borderRadius: BorderRadius.circular(6),
+                    textStyle: Theme.of(context).textTheme.titleMedium,
+                    isSelected: [
+                      ...filters.map(
+                          (filter) => controller.text.contains(filter.filter)),
+                    ],
+                    onPressed: (index) {
+                      final filter = filters[index];
+                      final text = filter.filter;
+                      if (controller.text.contains(text)) {
+                        controller.text = controller.text.replaceAll(text, '');
+                      } else {
+                        controller.text += ' $text';
+                      }
+                      controller.text = controller.text.trim();
                     },
-                  );
+                    children: [
+                      ...filters.map((filter) {
+                        return Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 10),
+                          child: Text(filter.name),
+                        );
+                      }),
+                    ],
+                  ),
+                ),
+                const Spacer(),
+                TextButton(
+                  onPressed: () async {
+                    final filterNameController = TextEditingController();
 
-                  final dialog = await showDialog<bool>(
-                    context: context,
-                    builder: (BuildContext context) => AlertDialog(
-                      title: const Text('Save'),
-                      content: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          const Text('Save filter as '),
-                          TextField(controller: filterNameController)
-                        ],
+                    final cancelButton = TextButton(
+                      child: const Text('Cancel'),
+                      onPressed: () => Navigator.pop(context, false),
+                    );
+
+                    final saveButton = TextButton(
+                      child: const Text('Save'),
+                      onPressed: () async {
+                        await saveFilter((
+                          name: filterNameController.text,
+                          filter: controller.text,
+                        ));
+                        // ignore: use_build_context_synchronously
+                        Navigator.pop(context, true);
+                      },
+                    );
+
+                    final dialog = await showDialog<bool>(
+                      context: context,
+                      builder: (BuildContext context) => AlertDialog(
+                        title: const Text('Save'),
+                        content: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Text('Save filter as '),
+                            TextField(controller: filterNameController)
+                          ],
+                        ),
+                        actions: [cancelButton, saveButton],
                       ),
-                      actions: [cancelButton, saveButton],
-                    ),
-                  );
+                    );
 
-                  if (dialog ?? false) {
-                    final savedFilters = await loadFilters();
-                    setState(() {
-                      filters = [...presetFilters, ...savedFilters];
-                    });
-                  }
-                },
-                child: const Text('Save filter'),
+                    if (dialog ?? false) {
+                      final savedFilters = await loadFilters();
+                      setState(() {
+                        filters = [...presetFilters, ...savedFilters];
+                      });
+                    }
+                  },
+                  child: const Text('Save filter'),
+                ),
+              ],
+            ),
+            Expanded(
+              child: TabBarView(
+                controller: tabController,
+                children: [
+                  PullRequests(
+                    pullrequests: widget.appModel.pullrequests,
+                    googlers: widget.appModel.googlers,
+                    filterStream: filterStream,
+                  ),
+                  Issues(
+                    issues: widget.appModel.issues,
+                    googlers: widget.appModel.googlers,
+                    filterStream: filterStream,
+                  ),
+                ],
               ),
-            ]),
-            if (widget.type == DashboardType.pullrequests)
-              PullRequests(
-                pullrequests: widget.pullrequests,
-                googlers: widget.googlers,
-                filterStream: filterStream,
-              )
-            else if (widget.type == DashboardType.issues)
-              Issues(
-                issues: widget.issues,
-                googlers: widget.googlers,
-                filterStream: filterStream,
-              )
-            else
-              const Center(child: Text('Select a table type to display.')),
+            ),
             ValueListenableBuilder<String?>(
               valueListenable: widget.updater.text,
               builder: (BuildContext context, String? value, _) {
