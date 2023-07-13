@@ -1,146 +1,68 @@
 // ignore_for_file: avoid_print
 
 import 'dart:async';
-import 'dart:convert';
 
-import 'package:firebase_core/firebase_core.dart';
-import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter/material.dart';
-import 'package:github/github.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+import 'package:url_strategy/url_strategy.dart';
 
-import '../../pull_request_utils.dart';
-import 'dashboard_type.dart';
-import 'firebase_options.dart';
-import 'issue_utils.dart';
-import 'src/filter/filter.dart';
+import 'model.dart';
 import 'src/pages/homepage.dart';
 
-final ValueNotifier<List<Issue>> issues = ValueNotifier([]);
-final ValueNotifier<List<PullRequest>> pullrequests = ValueNotifier([]);
-final ValueNotifier<List<User>> googlers = ValueNotifier([]);
-
 Future<void> main() async {
-  runApp(MyApp(initApp: initApp));
+  setPathUrlStrategy();
+
+  runApp(MyApp(appModel: AppModel()));
 }
 
-Future<void> initApp(ValueNotifier<bool> darkMode, DashboardType type) async {
-  await Firebase.initializeApp(
-    options: DefaultFirebaseOptions.currentPlatform,
-  );
+class MyApp extends StatefulWidget {
+  final AppModel appModel;
 
-  // Init the dark mode value notifier.
-  final prefs = await SharedPreferences.getInstance();
-  darkMode.value = prefs.getBool('darkMode') ?? true;
-  darkMode.addListener(() async {
-    await prefs.setBool('darkMode', darkMode.value);
+  const MyApp({
+    required this.appModel,
+    super.key,
   });
 
-  final localFilters = await loadFilters();
-  filters = [...presetFilters, ...localFilters];
-
-  if (type == DashboardType.issues) streamIssuesFromFirebase();
-  if (type == DashboardType.pullrequests) streamPullRequestsFromFirebase();
-  if (type != DashboardType.none) streamGooglersFromFirebase();
+  @override
+  State<MyApp> createState() => _MyAppState();
 }
 
-Future<void> streamGooglersFromFirebase() async {
-  await FirebaseDatabase.instance
-      .ref()
-      .child('googlers/')
-      .onValue
-      .map((event) => event.snapshot)
-      .where((snapshot) => snapshot.exists)
-      .map((snapshot) => snapshot.value as String)
-      .map((value) =>
-          (jsonDecode(value) as List).map((e) => User.fromJson(e)).toList())
-      .forEach((users) => googlers.value = users);
-}
+class _MyAppState extends State<MyApp> {
+  @override
+  void initState() {
+    super.initState();
 
-Future<void> streamPullRequestsFromFirebase() async {
-  await FirebaseDatabase.instance
-      .ref()
-      .child('pullrequests/data/')
-      .onValue
-      .map((event) => event.snapshot)
-      .where((snapshot) => snapshot.exists)
-      .map((snapshot) => snapshot.value as Map<String, dynamic>)
-      .map((reposToPRs) => reposToPRs.entries
-          .map(
-            (repoToPRs) => (repoToPRs.value as Map)
-                .values
-                .map((prJson) => decodePR(prJson))
-                .toList(),
-          )
-          .expand((listOfPRs) => listOfPRs)
-          .toList())
-      .forEach((prs) => pullrequests.value = prs);
-}
-
-Future<void> streamIssuesFromFirebase() async {
-  await FirebaseDatabase.instance
-      .ref()
-      .child('issues/data/')
-      .onValue
-      .map((event) => event.snapshot)
-      .where((snapshot) => snapshot.exists)
-      .map((snapshot) => snapshot.value as Map<String, dynamic>)
-      .map((reposToIssues) => reposToIssues.entries
-          .map(
-            (repoToIssues) => (repoToIssues.value as Map)
-                .values
-                .map((issueJson) => decodeIssue(issueJson))
-                .toList(),
-          )
-          .expand((listOfIssues) => listOfIssues)
-          .toList())
-      .forEach((issue) => issues.value = issue);
-}
-
-class MyApp extends StatelessWidget {
-  final ValueNotifier<DashboardType> typeSwitch =
-      ValueNotifier(DashboardType.none);
-  final ValueNotifier<bool> darkMode = ValueNotifier(true);
-
-  final Future<void> Function(ValueNotifier<bool>, DashboardType type) initApp;
-
-  MyApp({required this.initApp, super.key});
+    widget.appModel.init().then((_) {
+      setState(() {});
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
-    return ValueListenableBuilder<DashboardType>(
-      valueListenable: typeSwitch,
-      builder: (context, type, child) {
-        return FutureBuilder(
-          future: initApp(darkMode, type),
-          builder: (BuildContext context, AsyncSnapshot<void> snapshot) {
-            if (snapshot.connectionState == ConnectionState.waiting) {
-              return const Center(child: CircularProgressIndicator());
-            }
+    const appName = 'Dart Triage Dashboard';
 
-            if (snapshot.hasError) {
-              return Center(child: Text('${snapshot.error?.toString()}'));
-            }
+    return ValueListenableBuilder<bool>(
+      valueListenable: widget.appModel.darkMode,
+      builder: (BuildContext context, bool value, _) {
+        Widget content;
 
-            return ValueListenableBuilder<bool>(
-              valueListenable: darkMode,
-              builder: (BuildContext context, bool value, _) {
-                return MaterialApp(
-                  home: MyHomePage(
-                    darkModeSwitch: darkMode,
-                    typeSwitch: typeSwitch,
-                    googlers: googlers,
-                    pullrequests: pullrequests,
-                    issues: issues,
-                    type: type,
-                  ),
-                  title: 'Dart PR Dashboard',
-                  theme: value ? ThemeData.dark() : ThemeData.light(),
-                  debugShowCheckedModeBanner: false,
-                );
-              },
-            );
-          },
+        if (widget.appModel.inited) {
+          content = MyHomePage(
+            appModel: widget.appModel,
+          );
+        } else {
+          content = Scaffold(
+            appBar: AppBar(title: const Text(appName)),
+            body: const Center(
+              child: CircularProgressIndicator(),
+            ),
+          );
+        }
+
+        return MaterialApp(
+          title: appName,
+          theme: value ? ThemeData.dark() : ThemeData.light(),
+          debugShowCheckedModeBanner: false,
+          home: content,
         );
       },
     );

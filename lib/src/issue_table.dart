@@ -94,7 +94,7 @@ class _IssueTableState extends State<IssueTable> {
                 styleFunction: rowStyle,
               ),
               VTableColumn(
-                label: 'Assingees',
+                label: 'Assignees',
                 width: 120,
                 grow: 0.7,
                 alignment: Alignment.topLeft,
@@ -121,14 +121,14 @@ class _IssueTableState extends State<IssueTable> {
                 grow: 0.8,
                 alignment: Alignment.topLeft,
                 transformFunction: (issue) =>
-                    (issue.labels).map((e) => "'${e.name}'").join(', '),
+                    issue.labels.map((e) => "'${e.name}'").join(', '),
                 renderFunction:
                     (BuildContext context, Issue issue, String out) {
                   return ClipRect(
                     child: Wrap(
                       spacing: 4,
                       runSpacing: 4,
-                      children: (issue.labels).map(LabelWidget.new).toList(),
+                      children: issue.labels.map(LabelWidget.new).toList(),
                     ),
                   );
                 },
