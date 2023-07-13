@@ -10,8 +10,30 @@ class AppModel {
   final ValueNotifier<bool> darkMode = ValueNotifier(true);
 
   final ValueNotifier<List<User>> googlers = ValueNotifier([]);
-  final ValueNotifier<List<Issue>> issues = ValueNotifier([]);
-  final ValueNotifier<List<PullRequest>> pullrequests = ValueNotifier([]);
+
+  ValueNotifier<List<Issue>>? _issues;
+  ValueListenable<List<Issue>> get issues {
+    if (_issues == null) {
+      _issues = ValueNotifier([]);
+      streamIssuesFromFirebase().listen((event) {
+        _issues!.value = event;
+      });
+    }
+
+    return _issues!;
+  }
+
+  ValueNotifier<List<PullRequest>>? _pullrequests;
+  ValueListenable<List<PullRequest>> get pullrequests {
+    if (_pullrequests == null) {
+      _pullrequests = ValueNotifier([]);
+      streamPullRequestsFromFirebase().listen((event) {
+        _pullrequests!.value = event;
+      });
+    }
+
+    return _pullrequests!;
+  }
 
   final Completer<bool> _googlersAvailable = Completer<bool>();
 
@@ -33,16 +55,6 @@ class AppModel {
       if (!_googlersAvailable.isCompleted) _googlersAvailable.complete(true);
 
       googlers.value = event;
-    });
-
-    // issues
-    streamIssuesFromFirebase().listen((event) {
-      issues.value = event;
-    });
-
-    // PRs
-    streamPullRequestsFromFirebase().listen((event) {
-      pullrequests.value = event;
     });
 
     await _googlersAvailable.future;

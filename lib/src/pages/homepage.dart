@@ -272,13 +272,11 @@ class _MyHomePageState extends State<MyHomePage>
                 controller: tabController,
                 children: [
                   PullRequests(
-                    pullrequests: widget.appModel.pullrequests,
-                    googlers: widget.appModel.googlers,
+                    appModel: widget.appModel,
                     filterStream: filterStream,
                   ),
                   Issues(
-                    issues: widget.appModel.issues,
-                    googlers: widget.appModel.googlers,
+                    appModel: widget.appModel,
                     filterStream: filterStream,
                   ),
                 ],
@@ -307,22 +305,20 @@ class _MyHomePageState extends State<MyHomePage>
 class PullRequests extends StatelessWidget {
   const PullRequests({
     super.key,
+    required this.appModel,
     required this.filterStream,
-    required this.pullrequests,
-    required this.googlers,
   });
 
-  final ValueNotifier<List<PullRequest>> pullrequests;
-  final ValueNotifier<List<User>> googlers;
+  final AppModel appModel;
   final ValueNotifier<SearchFilter?> filterStream;
 
   @override
   Widget build(BuildContext context) {
     return ValueListenableBuilder(
-      valueListenable: pullrequests,
+      valueListenable: appModel.pullrequests,
       builder: (context, pullrequests, child) {
         return ValueListenableBuilder(
-          valueListenable: googlers,
+          valueListenable: appModel.googlers,
           builder: (context, googlers, child) {
             return PullRequestTable(
               pullRequests: pullrequests,
@@ -339,22 +335,20 @@ class PullRequests extends StatelessWidget {
 class Issues extends StatelessWidget {
   const Issues({
     super.key,
+    required this.appModel,
     required this.filterStream,
-    required this.issues,
-    required this.googlers,
   });
 
-  final ValueNotifier<List<Issue>> issues;
-  final ValueNotifier<List<User>> googlers;
+  final AppModel appModel;
   final ValueNotifier<SearchFilter?> filterStream;
 
   @override
   Widget build(BuildContext context) {
     return ValueListenableBuilder(
-      valueListenable: issues,
+      valueListenable: appModel.issues,
       builder: (context, issues, child) {
         return ValueListenableBuilder(
-          valueListenable: googlers,
+          valueListenable: appModel.googlers,
           builder: (context, googlers, child) {
             return IssueTable(
               issues: issues,
