@@ -9,6 +9,11 @@ import 'firebase.dart';
 class AppModel {
   final ValueNotifier<bool> darkMode = ValueNotifier(true);
 
+  ValueListenable<bool> get busy => _busy;
+
+  final ValueNotifier<bool> _busy = ValueNotifier(false);
+  int _busyCount = 0;
+
   final ValueNotifier<List<User>> googlers = ValueNotifier([]);
 
   ValueNotifier<List<Issue>>? _issues;
@@ -16,6 +21,7 @@ class AppModel {
     if (_issues == null) {
       _issues = ValueNotifier([]);
       streamIssuesFromFirebase().listen((event) {
+        _strobeBusy();
         _issues!.value = event;
       });
     }
@@ -28,6 +34,7 @@ class AppModel {
     if (_pullrequests == null) {
       _pullrequests = ValueNotifier([]);
       streamPullRequestsFromFirebase().listen((event) {
+        _strobeBusy();
         _pullrequests!.value = event;
       });
     }
@@ -54,9 +61,25 @@ class AppModel {
     streamGooglersFromFirebase().listen((event) {
       if (!_googlersAvailable.isCompleted) _googlersAvailable.complete(true);
 
+      _strobeBusy();
+
       googlers.value = event;
     });
 
     await _googlersAvailable.future;
+  }
+
+  void _strobeBusy() {
+    _busyCount++;
+    if (_busyCount == 1) {
+      _busy.value = true;
+    }
+
+    Timer(const Duration(milliseconds: 3000), () {
+      _busyCount--;
+      if (_busyCount == 0) {
+        _busy.value = false;
+      }
+    });
   }
 }

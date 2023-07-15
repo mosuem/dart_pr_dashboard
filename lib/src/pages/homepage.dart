@@ -80,6 +80,24 @@ class _MyHomePageState extends State<MyHomePage>
       appBar: AppBar(
         title: const Text('Dart Triage Dashboard'),
         actions: [
+          ValueListenableBuilder<bool>(
+            valueListenable: widget.appModel.busy,
+            builder: (BuildContext context, bool busy, _) {
+              return Center(
+                child: SizedBox(
+                  width: 16,
+                  height: 16,
+                  child: busy
+                      ? const CircularProgressIndicator(strokeWidth: 2)
+                      : null,
+                ),
+              );
+            },
+          ),
+          const SizedBox.square(
+            dimension: 24,
+            child: VerticalDivider(),
+          ),
           SizedBox.square(
             dimension: 16,
             child: ValueListenableBuilder<bool>(
