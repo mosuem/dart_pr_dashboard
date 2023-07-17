@@ -32,119 +32,114 @@ class IssueTable extends StatefulWidget {
 class _IssueTableState extends State<IssueTable> {
   @override
   Widget build(BuildContext context) {
-    return Expanded(
-      child: ValueListenableBuilder(
-        valueListenable: widget.filterStream,
-        builder: (context, filter, child) {
-          final pullRequests = widget.issues
-              .where((issue) => filter?.appliesTo(issue, getMatch) ?? true)
-              .toList();
-          return VTable<Issue>(
-            items: pullRequests,
-            tableDescription: '${pullRequests.length} issues',
-            rowHeight: 64.0,
-            includeCopyToClipboardAction: true,
-            onDoubleTap: (issue) => launchUrl(Uri.parse(issue.htmlUrl)),
-            columns: [
-              VTableColumn(
-                label: 'Title',
-                width: 200,
-                grow: 1,
-                alignment: Alignment.topLeft,
-                transformFunction: (issue) => issue.title,
-                styleFunction: rowStyle,
-              ),
-              VTableColumn(
-                label: 'Repo',
-                width: 50,
-                grow: 0.4,
-                alignment: Alignment.topLeft,
-                transformFunction: (issue) =>
-                    issue.repositoryUrl?.split('/').last ?? '',
-                styleFunction: rowStyle,
-              ),
-              VTableColumn(
-                label: 'Age (days)',
-                width: 50,
-                grow: 0.2,
-                alignment: Alignment.topRight,
-                transformFunction: (Issue issue) => daysSince(issue.createdAt),
-                styleFunction: rowStyle,
-                compareFunction: (a, b) =>
-                    compareDates(b.createdAt, a.createdAt),
-                validators: [oldIssueValidator],
-              ),
-              VTableColumn(
-                label: 'Updated (days)',
-                width: 50,
-                grow: 0.2,
-                alignment: Alignment.topRight,
-                transformFunction: (Issue issue) => daysSince(issue.updatedAt),
-                styleFunction: rowStyle,
-                compareFunction: (a, b) =>
-                    compareDates(b.updatedAt, a.updatedAt),
-              ),
-              VTableColumn(
-                label: 'Author',
-                width: 100,
-                grow: 0.4,
-                alignment: Alignment.topLeft,
-                transformFunction: (Issue issue) =>
-                    formatUsername(issue.user, widget.googlers),
-                styleFunction: rowStyle,
-              ),
-              VTableColumn(
-                label: 'Assignees',
-                width: 120,
-                grow: 0.7,
-                alignment: Alignment.topLeft,
-                renderFunction: (context, issue, out) {
-                  final reviewers = (issue.assignees ?? [])
-                      .map((reviewer) =>
-                          formatUsername(reviewer, widget.googlers))
-                      .join(', ');
-                  // TODO: Consider using a RichText widget here.
-                  return ClipRect(
-                    child: Wrap(
-                      children: [
-                        if (reviewers.isNotEmpty)
-                          Text(reviewers, style: rowStyle(issue)),
-                      ],
-                    ),
-                  );
-                },
-                styleFunction: rowStyle,
-              ),
-              VTableColumn(
-                label: 'Labels',
-                width: 120,
-                grow: 0.8,
-                alignment: Alignment.topLeft,
-                transformFunction: (issue) =>
-                    issue.labels.map((e) => "'${e.name}'").join(', '),
-                renderFunction:
-                    (BuildContext context, Issue issue, String out) {
-                  return ClipRect(
-                    child: Wrap(
-                      spacing: 4,
-                      runSpacing: 4,
-                      children: issue.labels.map(LabelWidget.new).toList(),
-                    ),
-                  );
-                },
-              ),
-              VTableColumn(
-                label: 'Upvotes',
-                width: 50,
-                grow: 0.2,
-                alignment: Alignment.topLeft,
-                transformFunction: (issue) => issue.upvotes.toString(),
-                compareFunction: (a, b) => a.upvotes.compareTo(b.upvotes),
-              ),
-            ],
-          );
-        },
-      ),
+    return ValueListenableBuilder(
+      valueListenable: widget.filterStream,
+      builder: (context, filter, child) {
+        final pullRequests = widget.issues
+            .where((issue) => filter?.appliesTo(issue, getMatch) ?? true)
+            .toList();
+        return VTable<Issue>(
+          items: pullRequests,
+          tableDescription: '${pullRequests.length} issues',
+          rowHeight: 64.0,
+          includeCopyToClipboardAction: true,
+          onDoubleTap: (issue) => launchUrl(Uri.parse(issue.htmlUrl)),
+          columns: [
+            VTableColumn(
+              label: 'Title',
+              width: 200,
+              grow: 1,
+              alignment: Alignment.topLeft,
+              transformFunction: (issue) => issue.title,
+              styleFunction: rowStyle,
+            ),
+            VTableColumn(
+              label: 'Repo',
+              width: 50,
+              grow: 0.4,
+              alignment: Alignment.topLeft,
+              transformFunction: (issue) =>
+                  issue.repositoryUrl?.split('/').last ?? '',
+              styleFunction: rowStyle,
+            ),
+            VTableColumn(
+              label: 'Age (days)',
+              width: 50,
+              grow: 0.2,
+              alignment: Alignment.topRight,
+              transformFunction: (Issue issue) => daysSince(issue.createdAt),
+              styleFunction: rowStyle,
+              compareFunction: (a, b) => compareDates(b.createdAt, a.createdAt),
+              validators: [oldIssueValidator],
+            ),
+            VTableColumn(
+              label: 'Updated (days)',
+              width: 50,
+              grow: 0.2,
+              alignment: Alignment.topRight,
+              transformFunction: (Issue issue) => daysSince(issue.updatedAt),
+              styleFunction: rowStyle,
+              compareFunction: (a, b) => compareDates(b.updatedAt, a.updatedAt),
+            ),
+            VTableColumn(
+              label: 'Author',
+              width: 100,
+              grow: 0.4,
+              alignment: Alignment.topLeft,
+              transformFunction: (Issue issue) =>
+                  formatUsername(issue.user, widget.googlers),
+              styleFunction: rowStyle,
+            ),
+            VTableColumn(
+              label: 'Assignees',
+              width: 120,
+              grow: 0.7,
+              alignment: Alignment.topLeft,
+              renderFunction: (context, issue, out) {
+                final reviewers = (issue.assignees ?? [])
+                    .map(
+                        (reviewer) => formatUsername(reviewer, widget.googlers))
+                    .join(', ');
+                // TODO: Consider using a RichText widget here.
+                return ClipRect(
+                  child: Wrap(
+                    children: [
+                      if (reviewers.isNotEmpty)
+                        Text(reviewers, style: rowStyle(issue)),
+                    ],
+                  ),
+                );
+              },
+              styleFunction: rowStyle,
+            ),
+            VTableColumn(
+              label: 'Labels',
+              width: 120,
+              grow: 0.8,
+              alignment: Alignment.topLeft,
+              transformFunction: (issue) =>
+                  issue.labels.map((e) => "'${e.name}'").join(', '),
+              renderFunction: (BuildContext context, Issue issue, String out) {
+                return ClipRect(
+                  child: Wrap(
+                    spacing: 4,
+                    runSpacing: 4,
+                    children: issue.labels.map(LabelWidget.new).toList(),
+                  ),
+                );
+              },
+            ),
+            VTableColumn(
+              label: 'Upvotes',
+              width: 50,
+              grow: 0.2,
+              alignment: Alignment.topLeft,
+              transformFunction: (issue) => issue.upvotes.toString(),
+              compareFunction: (a, b) => a.upvotes.compareTo(b.upvotes),
+            ),
+          ],
+        );
+      },
     );
   }
 }

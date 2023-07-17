@@ -32,129 +32,125 @@ class PullRequestTable extends StatefulWidget {
 class _PullRequestTableState extends State<PullRequestTable> {
   @override
   Widget build(BuildContext context) {
-    return Expanded(
-      child: ValueListenableBuilder(
-        valueListenable: widget.filterStream,
-        builder: (context, filter, child) {
-          final pullRequests = widget.pullRequests
-              .where((pr) => filter?.appliesTo(pr, getMatch) ?? true)
-              .toList();
-          return VTable<PullRequest>(
-            items: pullRequests,
-            tableDescription: '${pullRequests.length} PRs',
-            rowHeight: 64.0,
-            includeCopyToClipboardAction: true,
-            onDoubleTap: (pr) => launchUrl(Uri.parse(pr.htmlUrl!)),
-            columns: [
-              VTableColumn(
-                label: 'PR',
-                width: 200,
-                grow: 1,
-                alignment: Alignment.topLeft,
-                transformFunction: (pr) => pr.titleDisplay,
-                styleFunction: rowStyle,
-              ),
-              VTableColumn(
-                label: 'Repo',
-                width: 80,
-                grow: 0.5,
-                alignment: Alignment.topLeft,
-                transformFunction: (PullRequest pr) =>
-                    pr.base?.repo?.slug().fullName ?? '',
-                styleFunction: rowStyle,
-              ),
-              VTableColumn(
-                label: 'Age (days)',
-                width: 50,
-                grow: 0.2,
-                alignment: Alignment.topRight,
-                transformFunction: (PullRequest pr) => daysSince(pr.createdAt),
-                styleFunction: rowStyle,
-                compareFunction: (a, b) =>
-                    compareDates(b.createdAt, a.createdAt),
-                validators: [oldPrValidator],
-              ),
-              VTableColumn(
-                label: 'Updated (days)',
-                width: 50,
-                grow: 0.2,
-                alignment: Alignment.topRight,
-                transformFunction: (PullRequest pr) => daysSince(pr.updatedAt),
-                styleFunction: rowStyle,
-                compareFunction: (a, b) =>
-                    compareDates(b.updatedAt, a.updatedAt),
-                validators: [probablyStaleValidator],
-              ),
-              VTableColumn(
-                label: 'Author',
-                width: 100,
-                grow: 0.4,
-                alignment: Alignment.topLeft,
-                transformFunction: (PullRequest pr) {
-                  var text = formatUsername(pr.user, widget.googlers);
-                  if (pr.authorAssociationDisplay != null) {
-                    text = '$text, ${pr.authorAssociationDisplay}';
-                  }
-                  return text;
-                },
-                styleFunction: rowStyle,
-              ),
-              VTableColumn(
-                label: 'Reviewers',
-                width: 120,
-                grow: 0.7,
-                alignment: Alignment.topLeft,
-                renderFunction: (context, pr, out) {
-                  var reviewers = (pr.reviewers ?? [])
-                      .map((reviewer) =>
-                          formatUsername(reviewer, widget.googlers))
-                      .join(', ');
-                  final requestedReviewers = (pr.requestedReviewers ?? [])
-                      .map((reviewer) =>
-                          formatUsername(reviewer, widget.googlers))
-                      .join(', ');
-                  if (reviewers.isNotEmpty && requestedReviewers.isNotEmpty) {
-                    reviewers = '$reviewers, ';
-                  }
-                  // TODO: Consider using a RichText widget here.
-                  return ClipRect(
-                    child: Wrap(
-                      children: [
-                        if (reviewers.isNotEmpty)
-                          Text(reviewers, style: rowStyle(pr)),
-                        if (requestedReviewers.isNotEmpty)
-                          Text(requestedReviewers, style: draftPrStyle),
-                      ],
-                    ),
-                  );
-                },
-                styleFunction: rowStyle,
-                validators: [
-                  (pr) => needsReviewersValidator(widget.googlerUsers, pr),
-                ],
-              ),
-              VTableColumn(
-                label: 'Labels',
-                width: 120,
-                grow: 0.8,
-                alignment: Alignment.topLeft,
-                transformFunction: (pr) =>
-                    (pr.labels ?? []).map((e) => "'${e.name}'").join(', '),
-                renderFunction:
-                    (BuildContext context, PullRequest pr, String out) {
-                  return ClipRect(
-                    child: Wrap(
-                      spacing: 4,
-                      runSpacing: 4,
-                      children: (pr.labels ?? []).map(LabelWidget.new).toList(),
-                    ),
-                  );
-                },
-              ),
-            ],
-          );
-        },
-      ),
+    return ValueListenableBuilder(
+      valueListenable: widget.filterStream,
+      builder: (context, filter, child) {
+        final pullRequests = widget.pullRequests
+            .where((pr) => filter?.appliesTo(pr, getMatch) ?? true)
+            .toList();
+        return VTable<PullRequest>(
+          items: pullRequests,
+          tableDescription: '${pullRequests.length} PRs',
+          rowHeight: 64.0,
+          includeCopyToClipboardAction: true,
+          onDoubleTap: (pr) => launchUrl(Uri.parse(pr.htmlUrl!)),
+          columns: [
+            VTableColumn(
+              label: 'PR',
+              width: 200,
+              grow: 1,
+              alignment: Alignment.topLeft,
+              transformFunction: (pr) => pr.titleDisplay,
+              styleFunction: rowStyle,
+            ),
+            VTableColumn(
+              label: 'Repo',
+              width: 80,
+              grow: 0.5,
+              alignment: Alignment.topLeft,
+              transformFunction: (PullRequest pr) =>
+                  pr.base?.repo?.slug().fullName ?? '',
+              styleFunction: rowStyle,
+            ),
+            VTableColumn(
+              label: 'Age (days)',
+              width: 50,
+              grow: 0.2,
+              alignment: Alignment.topRight,
+              transformFunction: (PullRequest pr) => daysSince(pr.createdAt),
+              styleFunction: rowStyle,
+              compareFunction: (a, b) => compareDates(b.createdAt, a.createdAt),
+              validators: [oldPrValidator],
+            ),
+            VTableColumn(
+              label: 'Updated (days)',
+              width: 50,
+              grow: 0.2,
+              alignment: Alignment.topRight,
+              transformFunction: (PullRequest pr) => daysSince(pr.updatedAt),
+              styleFunction: rowStyle,
+              compareFunction: (a, b) => compareDates(b.updatedAt, a.updatedAt),
+              validators: [probablyStaleValidator],
+            ),
+            VTableColumn(
+              label: 'Author',
+              width: 100,
+              grow: 0.4,
+              alignment: Alignment.topLeft,
+              transformFunction: (PullRequest pr) {
+                var text = formatUsername(pr.user, widget.googlers);
+                if (pr.authorAssociationDisplay != null) {
+                  text = '$text, ${pr.authorAssociationDisplay}';
+                }
+                return text;
+              },
+              styleFunction: rowStyle,
+            ),
+            VTableColumn(
+              label: 'Reviewers',
+              width: 120,
+              grow: 0.7,
+              alignment: Alignment.topLeft,
+              renderFunction: (context, pr, out) {
+                var reviewers = (pr.reviewers ?? [])
+                    .map(
+                        (reviewer) => formatUsername(reviewer, widget.googlers))
+                    .join(', ');
+                final requestedReviewers = (pr.requestedReviewers ?? [])
+                    .map(
+                        (reviewer) => formatUsername(reviewer, widget.googlers))
+                    .join(', ');
+                if (reviewers.isNotEmpty && requestedReviewers.isNotEmpty) {
+                  reviewers = '$reviewers, ';
+                }
+                // TODO: Consider using a RichText widget here.
+                return ClipRect(
+                  child: Wrap(
+                    children: [
+                      if (reviewers.isNotEmpty)
+                        Text(reviewers, style: rowStyle(pr)),
+                      if (requestedReviewers.isNotEmpty)
+                        Text(requestedReviewers, style: draftPrStyle),
+                    ],
+                  ),
+                );
+              },
+              styleFunction: rowStyle,
+              validators: [
+                (pr) => needsReviewersValidator(widget.googlerUsers, pr),
+              ],
+            ),
+            VTableColumn(
+              label: 'Labels',
+              width: 120,
+              grow: 0.8,
+              alignment: Alignment.topLeft,
+              transformFunction: (pr) =>
+                  (pr.labels ?? []).map((e) => "'${e.name}'").join(', '),
+              renderFunction:
+                  (BuildContext context, PullRequest pr, String out) {
+                return ClipRect(
+                  child: Wrap(
+                    spacing: 4,
+                    runSpacing: 4,
+                    children: (pr.labels ?? []).map(LabelWidget.new).toList(),
+                  ),
+                );
+              },
+            ),
+          ],
+        );
+      },
     );
   }
 }
