@@ -6,7 +6,6 @@ import '../filter/filter.dart';
 import '../issue_table.dart';
 import '../misc.dart';
 import '../pullrequest_table.dart';
-import '../updater.dart';
 
 const presetFilters = [
   (name: 'Unlabeled', filter: r'labels:$^'),
@@ -20,9 +19,8 @@ const presetFilters = [
 
 class MyHomePage extends StatefulWidget {
   final AppModel appModel;
-  final Updater updater = Updater();
 
-  MyHomePage({
+  const MyHomePage({
     required this.appModel,
     super.key,
   });
@@ -78,18 +76,6 @@ class _MyHomePageState extends State<MyHomePage>
       appBar: AppBar(
         title: const Text('Dart Triage Dashboard'),
         actions: [
-          SizedBox.square(
-            dimension: 16,
-            child: ValueListenableBuilder<bool>(
-              valueListenable: widget.updater.status,
-              builder: (BuildContext context, bool isUpdating, _) {
-                return CircularProgressIndicator(
-                  strokeWidth: 2,
-                  value: isUpdating ? null : 0,
-                );
-              },
-            ),
-          ),
           const SizedBox.square(
             dimension: 24,
             child: VerticalDivider(),
@@ -239,19 +225,6 @@ class _MyHomePageState extends State<MyHomePage>
                   ),
                 ],
               ),
-            ),
-            ValueListenableBuilder<String?>(
-              valueListenable: widget.updater.text,
-              builder: (BuildContext context, String? value, _) {
-                return AnimatedContainer(
-                  duration: const Duration(milliseconds: 250),
-                  height: value == null ? 0 : 32,
-                  child: Padding(
-                    padding: const EdgeInsets.only(top: 8),
-                    child: Text(value ?? ''),
-                  ),
-                );
-              },
             ),
           ],
         ),
