@@ -1,14 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:github/github.dart';
 
-import '../../dashboard_type.dart';
 import '../../model.dart';
 import '../filter/filter.dart';
 import '../issue_table.dart';
 import '../misc.dart';
 import '../pullrequest_table.dart';
-import '../updater.dart';
-import 'updaterpage.dart';
 
 const presetFilters = [
   (name: 'Unlabeled', filter: r'labels:$^'),
@@ -22,9 +19,8 @@ const presetFilters = [
 
 class MyHomePage extends StatefulWidget {
   final AppModel appModel;
-  final Updater updater = Updater();
 
-  MyHomePage({
+  const MyHomePage({
     required this.appModel,
     super.key,
   });
@@ -80,45 +76,6 @@ class _MyHomePageState extends State<MyHomePage>
       appBar: AppBar(
         title: const Text('Dart Triage Dashboard'),
         actions: [
-          SizedBox.square(
-            dimension: 16,
-            child: ValueListenableBuilder<bool>(
-              valueListenable: widget.updater.status,
-              builder: (BuildContext context, bool isUpdating, _) {
-                return CircularProgressIndicator(
-                  strokeWidth: 2,
-                  value: isUpdating ? null : 0,
-                );
-              },
-            ),
-          ),
-          ValueListenableBuilder<bool>(
-            valueListenable: widget.updater.status,
-            builder: (BuildContext context, bool isUpdating, _) {
-              return IconButton(
-                icon: const Icon(Icons.refresh),
-                onPressed: isUpdating
-                    ? null
-                    : () async {
-                        final type = tabController.index == 0
-                            ? DashboardType.pullrequests
-                            : DashboardType.issues;
-                        await updateStoredToken(widget.updater, type);
-                      },
-              );
-            },
-          ),
-          ValueListenableBuilder<bool>(
-            valueListenable: widget.updater.status,
-            builder: (BuildContext context, bool isUpdating, _) {
-              return IconButton(
-                icon: const Icon(Icons.delete),
-                onPressed: isUpdating
-                    ? null
-                    : () async => await delete(widget.updater),
-              );
-            },
-          ),
           const SizedBox.square(
             dimension: 24,
             child: VerticalDivider(),
@@ -133,19 +90,6 @@ class _MyHomePageState extends State<MyHomePage>
                 onPressed: () async {
                   darkModeSwitch.value = !darkModeSwitch.value;
                 },
-              );
-            },
-          ),
-          IconButton(
-            icon: const Icon(Icons.settings),
-            onPressed: () async {
-              await Navigator.push(
-                context,
-                MaterialPageRoute<void>(
-                  builder: (BuildContext context) => UpdaterPage(
-                    updater: widget.updater,
-                  ),
-                ),
               );
             },
           ),
@@ -281,19 +225,6 @@ class _MyHomePageState extends State<MyHomePage>
                   ),
                 ],
               ),
-            ),
-            ValueListenableBuilder<String?>(
-              valueListenable: widget.updater.text,
-              builder: (BuildContext context, String? value, _) {
-                return AnimatedContainer(
-                  duration: const Duration(milliseconds: 250),
-                  height: value == null ? 0 : 32,
-                  child: Padding(
-                    padding: const EdgeInsets.only(top: 8),
-                    child: Text(value ?? ''),
-                  ),
-                );
-              },
             ),
           ],
         ),
