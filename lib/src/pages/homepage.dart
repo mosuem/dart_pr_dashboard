@@ -90,14 +90,7 @@ class _MyHomePageState extends State<MyHomePage>
               );
             },
           ),
-          const SizedBox.square(
-            dimension: 24,
-            child: VerticalDivider(),
-          ),
-          const SizedBox.square(
-            dimension: 24,
-            child: VerticalDivider(),
-          ),
+          const SizedBox.square(dimension: 16),
           ValueListenableBuilder<bool>(
             valueListenable: darkModeSwitch,
             builder: (BuildContext context, bool value, _) {
