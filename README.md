@@ -4,5 +4,5 @@ A dashboard to help with PR triage in dart-lang repositories.
 
 To update, run 
 ```
-flutter build web; firebase deploy
+./tool/deploy.sh
 ```
