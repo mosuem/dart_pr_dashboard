@@ -32,7 +32,8 @@ class LabelWidget extends StatelessWidget {
                 ? Colors.grey.shade900
                 : Colors.grey.shade100,
           ),
-          textScaler: const TextScaler.linear(0.75),
+          textScaleFactor: 0.75,
+          // textScaler: const TextScaler.linear(0.75),
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
         ),
