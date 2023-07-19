@@ -60,7 +60,9 @@ class _MyAppState extends State<MyApp> {
 
         return MaterialApp(
           title: appName,
-          theme: value ? ThemeData.dark() : ThemeData.light(),
+          theme: value
+              ? ThemeData.dark(useMaterial3: false)
+              : ThemeData.light(useMaterial3: false),
           debugShowCheckedModeBanner: false,
           home: content,
         );

@@ -6,6 +6,7 @@ import 'package:vtable/vtable.dart';
 import '../pull_request_utils.dart';
 import 'filter/filter.dart';
 import 'misc.dart';
+import 'widgets.dart';
 
 class PullRequestTable extends StatefulWidget {
   final List<PullRequest> pullRequests;
@@ -41,7 +42,6 @@ class _PullRequestTableState extends State<PullRequestTable> {
         return VTable<PullRequest>(
           items: pullRequests,
           tableDescription: '${pullRequests.length} PRs',
-          rowHeight: 64.0,
           includeCopyToClipboardAction: true,
           onDoubleTap: (pr) => launchUrl(Uri.parse(pr.htmlUrl!)),
           columns: [
@@ -52,6 +52,9 @@ class _PullRequestTableState extends State<PullRequestTable> {
               alignment: Alignment.topLeft,
               transformFunction: (pr) => pr.titleDisplay,
               styleFunction: rowStyle,
+              renderFunction: (context, PullRequest pr, String out) {
+                return textTwoLines(out);
+              },
             ),
             VTableColumn(
               label: 'Repo',
@@ -162,39 +165,6 @@ TextStyle? rowStyle(PullRequest pr) {
   if (pr.authorIsCopybara) return draftPrStyle;
 
   return null;
-}
-
-class LabelWidget extends StatelessWidget {
-  final IssueLabel label;
-
-  const LabelWidget(
-    this.label, {
-    super.key,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final chipColor = Color(int.parse('FF${label.color}', radix: 16));
-
-    return Material(
-      color: chipColor,
-      shape: const StadiumBorder(),
-      elevation: 2,
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 6.0),
-        child: Text(
-          label.name,
-          style: TextStyle(
-            color: isLightColor(chipColor)
-                ? Colors.grey.shade900
-                : Colors.grey.shade100,
-          ),
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-        ),
-      ),
-    );
-  }
 }
 
 ValidationResult? needsReviewersValidator(

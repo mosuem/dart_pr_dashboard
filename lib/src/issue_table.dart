@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:github/github.dart';
+import 'package:intl/intl.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:vtable/vtable.dart';
 
 import '../issue_utils.dart';
 import 'filter/filter.dart';
 import 'misc.dart';
+import 'widgets.dart';
 
 class IssueTable extends StatefulWidget {
   final List<Issue> issues;
@@ -29,19 +31,21 @@ class IssueTable extends StatefulWidget {
   State<IssueTable> createState() => _IssueTableState();
 }
 
+final NumberFormat _nf = NumberFormat();
+
 class _IssueTableState extends State<IssueTable> {
   @override
   Widget build(BuildContext context) {
     return ValueListenableBuilder(
       valueListenable: widget.filterStream,
       builder: (context, filter, child) {
-        final pullRequests = widget.issues
+        final issues = widget.issues
             .where((issue) => filter?.appliesTo(issue, getMatch) ?? true)
             .toList();
+
         return VTable<Issue>(
-          items: pullRequests,
-          tableDescription: '${pullRequests.length} issues',
-          rowHeight: 64.0,
+          items: issues,
+          tableDescription: '${_nf.format(issues.length)} issues',
           includeCopyToClipboardAction: true,
           onDoubleTap: (issue) => launchUrl(Uri.parse(issue.htmlUrl)),
           columns: [
@@ -51,16 +55,16 @@ class _IssueTableState extends State<IssueTable> {
               grow: 1,
               alignment: Alignment.topLeft,
               transformFunction: (issue) => issue.title,
-              styleFunction: rowStyle,
+              renderFunction: (context, Issue issue, String out) {
+                return textTwoLines(out);
+              },
             ),
             VTableColumn(
               label: 'Repo',
-              width: 50,
+              width: 80,
               grow: 0.4,
               alignment: Alignment.topLeft,
-              transformFunction: (issue) =>
-                  issue.repositoryUrl?.split('/').last ?? '',
-              styleFunction: rowStyle,
+              transformFunction: (issue) => issue.repoSlug ?? '',
             ),
             VTableColumn(
               label: 'Age (days)',
@@ -68,7 +72,6 @@ class _IssueTableState extends State<IssueTable> {
               grow: 0.2,
               alignment: Alignment.topRight,
               transformFunction: (Issue issue) => daysSince(issue.createdAt),
-              styleFunction: rowStyle,
               compareFunction: (a, b) => compareDates(b.createdAt, a.createdAt),
               validators: [oldIssueValidator],
             ),
@@ -78,7 +81,6 @@ class _IssueTableState extends State<IssueTable> {
               grow: 0.2,
               alignment: Alignment.topRight,
               transformFunction: (Issue issue) => daysSince(issue.updatedAt),
-              styleFunction: rowStyle,
               compareFunction: (a, b) => compareDates(b.updatedAt, a.updatedAt),
             ),
             VTableColumn(
@@ -88,7 +90,6 @@ class _IssueTableState extends State<IssueTable> {
               alignment: Alignment.topLeft,
               transformFunction: (Issue issue) =>
                   formatUsername(issue.user, widget.googlers),
-              styleFunction: rowStyle,
             ),
             VTableColumn(
               label: 'Assignees',
@@ -104,13 +105,11 @@ class _IssueTableState extends State<IssueTable> {
                 return ClipRect(
                   child: Wrap(
                     children: [
-                      if (reviewers.isNotEmpty)
-                        Text(reviewers, style: rowStyle(issue)),
+                      if (reviewers.isNotEmpty) Text(reviewers),
                     ],
                   ),
                 );
               },
-              styleFunction: rowStyle,
             ),
             VTableColumn(
               label: 'Labels',
@@ -131,56 +130,16 @@ class _IssueTableState extends State<IssueTable> {
             ),
             VTableColumn(
               label: 'Upvotes',
+              icon: Icons.thumb_up_outlined,
               width: 50,
               grow: 0.2,
-              alignment: Alignment.topLeft,
+              alignment: Alignment.topRight,
               transformFunction: (issue) => issue.upvotes.toString(),
               compareFunction: (a, b) => a.upvotes.compareTo(b.upvotes),
             ),
           ],
         );
       },
-    );
-  }
-}
-
-const TextStyle draftPrStyle = TextStyle(color: Colors.grey);
-
-TextStyle? rowStyle(Issue issue) {
-  if (issue.draft == true) return draftPrStyle;
-
-  return null;
-}
-
-class LabelWidget extends StatelessWidget {
-  final IssueLabel label;
-
-  const LabelWidget(
-    this.label, {
-    super.key,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final chipColor = Color(int.parse('FF${label.color}', radix: 16));
-
-    return Material(
-      color: chipColor,
-      shape: const StadiumBorder(),
-      elevation: 2,
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 6.0),
-        child: Text(
-          label.name,
-          style: TextStyle(
-            color: isLightColor(chipColor)
-                ? Colors.grey.shade900
-                : Colors.grey.shade100,
-          ),
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-        ),
-      ),
     );
   }
 }

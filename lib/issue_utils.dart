@@ -29,4 +29,13 @@ extension IssueUtils on Issue {
   }
 
   bool authorIsGoogler(Set<String> googlers) => googlers.contains(user?.login);
+
+  String? get repoSlug {
+    final url = repositoryUrl;
+    if (url == null) return null;
+
+    const marker = '/repos/';
+    final index = url.indexOf(marker);
+    return index == -1 ? null : url.substring(index + marker.length);
+  }
 }
