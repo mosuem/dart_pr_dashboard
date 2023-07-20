@@ -47,3 +47,5 @@ app.*.map.json
 tools/
 
 .firebase/
+
+pubspec.lock
