@@ -32,10 +32,46 @@ class LabelWidget extends StatelessWidget {
                 ? Colors.grey.shade900
                 : Colors.grey.shade100,
           ),
+          // TODO: Replace textScaleFactor with textScaler w/ the next beta.
+          // ignore: deprecated_member_use
           textScaleFactor: 0.75,
           // textScaler: const TextScaler.linear(0.75),
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
+        ),
+      ),
+    );
+  }
+}
+
+class SearchField extends StatelessWidget {
+  final double height;
+  final String hintText;
+  final ValueChanged<String>? onChanged;
+
+  const SearchField({
+    this.height = 36,
+    this.hintText = 'Search',
+    this.onChanged,
+    Key? key,
+  }) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: 175,
+      height: height,
+      child: TextField(
+        maxLines: 1,
+        onChanged: onChanged,
+        decoration: InputDecoration(
+          fillColor: Colors.grey.shade100,
+          filled: true,
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(6),
+          ),
+          hintText: hintText,
+          hintStyle: const TextStyle(color: Colors.grey, fontSize: 12),
         ),
       ),
     );
