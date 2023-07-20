@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:github/github.dart';
+import 'package:intl4x/intl4x.dart';
+import 'package:intl4x/number_format.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:vtable/vtable.dart';
 
@@ -30,6 +32,8 @@ class PullRequestTable extends StatefulWidget {
   State<PullRequestTable> createState() => _PullRequestTableState();
 }
 
+final NumberFormat _nf = Intl().numberFormat();
+
 class _PullRequestTableState extends State<PullRequestTable> {
   @override
   Widget build(BuildContext context) {
@@ -41,7 +45,7 @@ class _PullRequestTableState extends State<PullRequestTable> {
             .toList();
         return VTable<PullRequest>(
           items: pullRequests,
-          tableDescription: '${pullRequests.length} PRs',
+          tableDescription: '${_nf.format(pullRequests.length)} PRs',
           includeCopyToClipboardAction: true,
           onDoubleTap: (pr) => launchUrl(Uri.parse(pr.htmlUrl!)),
           columns: [

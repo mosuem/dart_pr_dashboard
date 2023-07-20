@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:github/github.dart';
-import 'package:intl/intl.dart';
+import 'package:intl4x/intl4x.dart';
+import 'package:intl4x/number_format.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:vtable/vtable.dart';
 
@@ -31,7 +32,7 @@ class IssueTable extends StatefulWidget {
   State<IssueTable> createState() => _IssueTableState();
 }
 
-final NumberFormat _nf = NumberFormat();
+final NumberFormat _nf = Intl().numberFormat();
 
 class _IssueTableState extends State<IssueTable> {
   @override
