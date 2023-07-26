@@ -1,12 +1,12 @@
 import 'dart:convert';
 
+import 'package:dart_triage_updater/data_diff.dart';
+import 'package:dart_triage_updater/firebase_database.dart' as tr;
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'package:github/github.dart';
 
 import 'firebase_options.dart';
-import 'issue_utils.dart';
-import 'pull_request_utils.dart';
 
 Future<void> initFirebase() async {
   await Firebase.initializeApp(
@@ -29,37 +29,41 @@ Stream<List<User>> streamGooglersFromFirebase() {
 Stream<List<Issue>> streamIssuesFromFirebase() {
   return FirebaseDatabase.instance
       .ref()
-      .child('issues/data/')
+      .child('changes/issues/')
       .onValue
       .map((event) => event.snapshot)
       .where((snapshot) => snapshot.exists)
       .map((snapshot) => snapshot.value as Map<String, dynamic>)
-      .map((reposToIssues) => reposToIssues.entries
-          .map(
-            (repoToIssues) => (repoToIssues.value as Map)
-                .values
-                .map((issueJson) => decodeIssue(issueJson))
-                .toList(),
-          )
-          .expand((listOfIssues) => listOfIssues)
-          .toList());
+      .map(
+        (idsToTimestamps) => getData(
+          idsToTimestamps,
+          (initial, changes) =>
+              DataDiff(initial, changes, Issue.fromJson).applied(),
+        ),
+      );
+}
+
+List<T> getData<T>(Map<String, dynamic> idsToTimestamps,
+    T Function(dynamic initial, dynamic changes) fromJson) {
+  return tr.DatabaseReference.extractDataFrom(idsToTimestamps, fromJson)
+      .values
+      .expand((list) => list)
+      .toList();
 }
 
 Stream<List<PullRequest>> streamPullRequestsFromFirebase() {
   return FirebaseDatabase.instance
       .ref()
-      .child('pullrequests/data/')
+      .child('changes/pullrequests/')
       .onValue
       .map((event) => event.snapshot)
       .where((snapshot) => snapshot.exists)
       .map((snapshot) => snapshot.value as Map<String, dynamic>)
-      .map((reposToPRs) => reposToPRs.entries
-          .map(
-            (repoToPRs) => (repoToPRs.value as Map)
-                .values
-                .map((prJson) => decodePR(prJson))
-                .toList(),
-          )
-          .expand((listOfPRs) => listOfPRs)
-          .toList());
+      .map(
+        (idsToTimestamps) => getData(
+          idsToTimestamps,
+          (initial, changes) =>
+              DataDiff(initial, changes, PullRequest.fromJson).applied(),
+        ),
+      );
 }
