@@ -6,6 +6,7 @@ import '../filter/filter.dart';
 import '../issue_table.dart';
 import '../misc.dart';
 import '../pullrequest_table.dart';
+import 'reportpage.dart';
 
 const presetFilters = [
   (name: 'Unlabeled', filter: r'labels:$^'),
@@ -50,7 +51,11 @@ class _MyHomePageState extends State<MyHomePage>
       });
     }();
 
-    tabController = TabController(vsync: this, length: 2);
+    tabController = TabController(
+      vsync: this,
+      length: 2,
+      initialIndex: 1,
+    );
 
     controller.addListener(() {
       setState(() {
@@ -90,6 +95,30 @@ class _MyHomePageState extends State<MyHomePage>
               );
             },
           ),
+          const SizedBox.square(dimension: 16),
+          ValueListenableBuilder<List<PullRequest>>(
+              valueListenable: widget.appModel.pullrequests,
+              builder:
+                  (BuildContext context, List<PullRequest> pullrequests, _) {
+                return ValueListenableBuilder<List<Issue>>(
+                    valueListenable: widget.appModel.issues,
+                    builder: (BuildContext context, List<Issue> issues, _) {
+                      return IconButton(
+                        icon: const Icon(Icons.report),
+                        onPressed: () async {
+                          Navigator.push<void>(
+                            context,
+                            MaterialPageRoute<void>(
+                              builder: (BuildContext context) => ReportPage(
+                                issues: issues,
+                                pullrequests: pullrequests,
+                              ),
+                            ),
+                          );
+                        },
+                      );
+                    });
+              }),
           const SizedBox.square(dimension: 16),
           ValueListenableBuilder<bool>(
             valueListenable: darkModeSwitch,
