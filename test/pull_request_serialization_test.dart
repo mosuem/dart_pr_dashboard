@@ -1,4 +1,4 @@
-import 'package:dart_pr_dashboard/pull_request_utils.dart';
+import 'package:dart_triage_updater/pull_request_utils.dart';
 import 'package:github/github.dart';
 import 'package:test/test.dart';
 
@@ -10,7 +10,7 @@ void main() {
     final decodedPR = decodePR(encodePR(pullRequest));
 
     expect(decodedPR.commentsCount, equals(pullRequest.commentsCount));
-    expect(decodedPR.reviewers!.map((e) => e.id),
-        orderedEquals(pullRequest.reviewers!.map((e) => e.id)));
+    expect(decodedPR.reviewers.map((e) => e.id),
+        orderedEquals(pullRequest.reviewers.map((e) => e.id)));
   });
 }
