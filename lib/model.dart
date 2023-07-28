@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:dart_triage_updater/data_diff.dart';
 import 'package:flutter/foundation.dart';
 import 'package:github/github.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -16,11 +17,11 @@ class AppModel {
 
   final ValueNotifier<List<User>> googlers = ValueNotifier([]);
 
-  ValueNotifier<List<Issue>>? _issues;
-  ValueListenable<List<Issue>> get issues {
+  ValueNotifier<List<DataDiff<Issue>>>? _issues;
+  ValueListenable<List<DataDiff<Issue>>> get issues {
     if (_issues == null) {
       _issues = ValueNotifier([]);
-      streamIssuesFromFirebase().listen((event) {
+      streamIssuesFromFirebaseDebug().listen((event) {
         _strobeBusy();
         _issues!.value = event;
       });
@@ -29,11 +30,11 @@ class AppModel {
     return _issues!;
   }
 
-  ValueNotifier<List<PullRequest>>? _pullrequests;
-  ValueListenable<List<PullRequest>> get pullrequests {
+  ValueNotifier<List<DataDiff<PullRequest>>>? _pullrequests;
+  ValueListenable<List<DataDiff<PullRequest>>> get pullrequests {
     if (_pullrequests == null) {
       _pullrequests = ValueNotifier([]);
-      streamPullRequestsFromFirebase().listen((event) {
+      streamPullRequestsFromFirebaseDebug().listen((event) {
         _strobeBusy();
         _pullrequests!.value = event;
       });

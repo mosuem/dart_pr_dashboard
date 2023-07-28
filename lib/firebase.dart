@@ -1,8 +1,10 @@
+import 'dart:convert';
 import 'dart:math';
 
-import 'package:dart_triage_updater/data_diff.dart';
 import 'package:dart_triage_updater/firebase_database.dart' as tr;
+import 'package:dart_triage_updater/pull_request_utils.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_database/firebase_database.dart';
 import 'package:github/github.dart';
 
 import 'fake_names.dart';
@@ -27,56 +29,54 @@ Stream<List<User>> streamGooglersFromFirebase() {
   //         (jsonDecode(value) as List).map((e) => User.fromJson(e)).toList());
 }
 
-
 Stream<List<Issue>> streamIssuesFromFirebaseDebug() {
   final elements = List.generate(100, (index) {
-    final numDays = Random().nextInt(600);
+    final numDays = Random().nextInt(600) + 1;
     final numDays2 = Random().nextInt(numDays);
-    return Issue(
+    final issue = Issue(
       title: 'Issue $index',
       createdAt: DateTime.now().subtract(Duration(days: numDays)),
       updatedAt: DateTime.now()
           .subtract(Duration(days: Random().nextBool() ? numDays2 : numDays)),
       user: User(login: names[index % names.length]),
     );
+    return issue;
   });
   return Stream.fromIterable([elements]);
 }
 
 Stream<List<PullRequest>> streamPullRequestsFromFirebaseDebug() {
-  final elements = List.generate(100, (index) {
-    final numDays = Random().nextInt(600);
+  final diffs = List.generate(100, (index) {
+    final numDays = Random().nextInt(600) + 1;
     final numDays2 = Random().nextInt(numDays);
-    return PullRequest(
+    final pullRequest = PullRequest(
       title: 'Issue $index',
       createdAt: DateTime.now().subtract(Duration(days: numDays)),
       updatedAt: DateTime.now()
           .subtract(Duration(days: Random().nextBool() ? numDays2 : numDays)),
       user: User(login: names[index % names.length]),
     );
+    return pullRequest;
   });
-  return Stream.fromIterable([elements]);
+  return Stream.fromIterable([diffs]);
 }
 
 Stream<List<Issue>> streamIssuesFromFirebase() {
   return FirebaseDatabase.instance
       .ref()
-      .child('changes/issues/')
+      .child('changes/issues/data/')
       .onValue
       .map((event) => event.snapshot)
       .where((snapshot) => snapshot.exists)
       .map((snapshot) => snapshot.value as Map<String, dynamic>)
-      .map(
-        (idsToTimestamps) => getData(
-          idsToTimestamps,
-          (initial, changes) =>
-              DataDiff(initial, changes, Issue.fromJson).applied(),
-        ),
-      );
+      .map((data) => getData<Issue>(data, Issue.fromJson)
+          .values
+          .expand((issues) => issues)
+          .toList());
 }
 
-List<T> getData<T>(Map<String, dynamic> idsToTimestamps,
-    T Function(dynamic initial, dynamic changes) fromJson) {
+Map<RepositorySlug, List<T>> getData<T>(Map<String, dynamic> idsToTimestamps,
+    T Function(Map<String, dynamic> initial) fromJson) {
   return tr.DatabaseReference.extractDataFrom(idsToTimestamps, fromJson)
       .values
       .expand((list) => list)
@@ -86,16 +86,13 @@ List<T> getData<T>(Map<String, dynamic> idsToTimestamps,
 Stream<List<PullRequest>> streamPullRequestsFromFirebase() {
   return FirebaseDatabase.instance
       .ref()
-      .child('changes/pullrequests/')
+      .child('changes/pullrequests/data/')
       .onValue
       .map((event) => event.snapshot)
       .where((snapshot) => snapshot.exists)
       .map((snapshot) => snapshot.value as Map<String, dynamic>)
-      .map(
-        (idsToTimestamps) => getData(
-          idsToTimestamps,
-          (initial, changes) =>
-              DataDiff(initial, changes, PullRequest.fromJson).applied(),
-        ),
-      );
+      .map((data) => getData<PullRequest>(data, decodePR)
+          .values
+          .expand((issues) => issues)
+          .toList());
 }

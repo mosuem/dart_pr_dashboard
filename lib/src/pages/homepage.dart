@@ -1,3 +1,4 @@
+import 'package:dart_triage_updater/data_diff.dart';
 import 'package:flutter/material.dart';
 import 'package:github/github.dart';
 
@@ -96,13 +97,14 @@ class _MyHomePageState extends State<MyHomePage>
             },
           ),
           const SizedBox.square(dimension: 16),
-          ValueListenableBuilder<List<PullRequest>>(
+          ValueListenableBuilder<List<DataDiff<PullRequest>>>(
               valueListenable: widget.appModel.pullrequests,
-              builder:
-                  (BuildContext context, List<PullRequest> pullrequests, _) {
-                return ValueListenableBuilder<List<Issue>>(
+              builder: (BuildContext context,
+                  List<DataDiff<PullRequest>> pullrequests, _) {
+                return ValueListenableBuilder<List<DataDiff<Issue>>>(
                     valueListenable: widget.appModel.issues,
-                    builder: (BuildContext context, List<Issue> issues, _) {
+                    builder: (BuildContext context,
+                        List<DataDiff<Issue>> issues, _) {
                       return IconButton(
                         icon: const Icon(Icons.report),
                         onPressed: () async {
@@ -110,8 +112,8 @@ class _MyHomePageState extends State<MyHomePage>
                             context,
                             MaterialPageRoute<void>(
                               builder: (BuildContext context) => ReportPage(
-                                issues: issues,
-                                pullrequests: pullrequests,
+                                issueChanges: issues,
+                                pullrequestChanges: pullrequests,
                               ),
                             ),
                           );
@@ -292,7 +294,7 @@ class PullRequests extends StatelessWidget {
           valueListenable: appModel.googlers,
           builder: (context, googlers, child) {
             return PullRequestTable(
-              pullRequests: pullrequests,
+              pullRequests: pullrequests.map((e) => e.applied()!).toList(),
               googlers: googlers,
               filterStream: filterStream,
             );
@@ -322,7 +324,7 @@ class Issues extends StatelessWidget {
           valueListenable: appModel.googlers,
           builder: (context, googlers, child) {
             return IssueTable(
-              issues: issues,
+              issues: issues.map((e) => e.applied()!).toList(),
               googlers: googlers,
               filterStream: filterStream,
             );
