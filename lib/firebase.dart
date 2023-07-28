@@ -1,4 +1,3 @@
-import 'dart:convert';
 
 import 'package:dart_triage_updater/firebase_database.dart' as tr;
 import 'package:dart_triage_updater/pull_request_utils.dart';
