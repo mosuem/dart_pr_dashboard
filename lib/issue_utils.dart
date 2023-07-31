@@ -38,4 +38,32 @@ extension IssueUtils on Issue {
     final index = url.indexOf(marker);
     return index == -1 ? null : url.substring(index + marker.length);
   }
+
+  bool matchesFilter(String filter) {
+    // title
+    if (title.toLowerCase().contains(filter)) return true;
+
+    // repo
+    final slug = repoSlug;
+    if (slug != null && slug.contains(filter)) return true;
+
+    // author
+    final login = user?.login?.toLowerCase();
+    if (login != null && login.contains(filter)) return true;
+
+    // assignees
+    if (assignees != null) {
+      for (final assignee in assignees!) {
+        final login = assignee.login?.toLowerCase();
+        if (login != null && login.contains(filter)) return true;
+      }
+    }
+
+    // labels
+    for (final label in labels) {
+      if (label.name.toLowerCase().contains(filter)) return true;
+    }
+
+    return false;
+  }
 }
