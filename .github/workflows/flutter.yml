@@ -17,6 +17,7 @@ jobs:
       - uses: subosito/flutter-action@v2
         with:
             channel: 'beta'
+      - run: cd pkgs/dart_pr_dashboard/
       - run: flutter pub get
       - run: flutter analyze --fatal-infos
       - run: dart format --set-exit-if-changed .
