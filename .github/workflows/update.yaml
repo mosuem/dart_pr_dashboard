@@ -32,8 +32,8 @@ jobs:
 
       - name: Update issues and pull requests
         if: github.event.schedule != '0 0 * * 0'
-        run: dart run bin/dart_triage_updater.dart --update issues,pullrequests --api-key=${{ secrets.API_KEY }}
+        run: dart run bin/dart_triage_updater.dart --update issues,pullrequests --api-key=${{ secrets.API_KEY }} --email=${{ secrets.FIREBASE_EMAIL }} --password=${{ secrets.FIREBASE_PASSWORD }}
 
       - name: Update googlers
         if: github.event.schedule == '0 0 * * 0'
-        run: dart run bin/dart_triage_updater.dart --update googlers --api-key=${{ secrets.API_KEY }}
+        run: dart run bin/dart_triage_updater.dart --update googlers --api-key=${{ secrets.API_KEY }} --email=${{ secrets.FIREBASE_EMAIL }} --password=${{ secrets.FIREBASE_PASSWORD }}

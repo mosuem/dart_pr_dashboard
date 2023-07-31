@@ -3,6 +3,7 @@ import 'dart:io';
 
 import 'package:args/args.dart';
 import 'package:dart_triage_updater/dart_triage_updater.dart';
+import 'package:dart_triage_updater/firebase_database.dart';
 import 'package:dart_triage_updater/github.dart';
 import 'package:dart_triage_updater/update_type.dart';
 
@@ -15,6 +16,8 @@ Future<void> main(List<String> arguments) async {
       help: 'Which types to update',
     )
     ..addOption('api-key')
+    ..addOption('email')
+    ..addOption('password')
     ..addFlag(
       'help',
       abbr: 'h',
@@ -23,6 +26,8 @@ Future<void> main(List<String> arguments) async {
     );
   List<String> toUpdate;
   String? apikey;
+  String email;
+  String password;
   try {
     final parse = argParser.parse(arguments);
     if (parse['help']) {
@@ -31,6 +36,8 @@ Future<void> main(List<String> arguments) async {
     }
     toUpdate = parse['update'] as List<String>;
     apikey = parse['api-key'] as String?;
+    email = parse['email'] as String;
+    password = parse['password'] as String;
   } catch (e) {
     print(
         'Invalid arguments "$arguments" passed.\n\n Usage: ${argParser.usage}');
@@ -40,5 +47,10 @@ Future<void> main(List<String> arguments) async {
   final updateTypes = toUpdate
       .map((e) => UpdateType.values.firstWhere((type) => type.name == e))
       .toList();
-  await TriageUpdater(github).updateThese(updateTypes);
+  final authRequest = AuthRequest(
+    email: email,
+    password: password,
+    returnSecureToken: true,
+  );
+  await TriageUpdater(github, authRequest).updateThese(updateTypes);
 }
