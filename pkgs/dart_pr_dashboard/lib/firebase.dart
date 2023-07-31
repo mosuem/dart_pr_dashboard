@@ -1,4 +1,3 @@
-
 import 'package:dart_triage_updater/firebase_database.dart' as tr;
 import 'package:dart_triage_updater/pull_request_utils.dart';
 import 'package:firebase_core/firebase_core.dart';
