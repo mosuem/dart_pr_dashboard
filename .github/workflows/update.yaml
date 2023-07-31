@@ -1,0 +1,36 @@
+# This workflow uses actions that are not certified by GitHub.
+# They are provided by a third-party and are governed by
+# separate terms of service, privacy policy, and support
+# documentation.
+
+name: Update database
+
+on:
+  push:
+    branches:
+      - main
+  schedule:
+    - cron: '0 */3 * * *' # Every 3 hours
+    - cron: '0 0 * * 0' # Once a week, at 00:00 UTC
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@c85c95e3d7251135ab7dc9ce3241c5835cc595a9
+      - uses: dart-lang/setup-dart@9a04e6d73cca37bd455e0608d7e5092f881fd603
+
+      - name: Go to subfolder
+        run: cd pkgs/dart_triage_updater
+      
+      - name: Install dependencies
+        run: dart pub get
+
+      - name: Update issues and pull requests
+        if: github.event.schedule != '0 0 * * 0'
+        run: dart run bin/dart_triage_updater.dart --update issues,pullrequests --api-key=${{ secrets.API_KEY }}
+
+      - name: Update googlers
+        if: github.event.schedule == '0 0 * * 0'
+        run: dart run bin/dart_triage_updater.dart --update googlers --api-key=${{ secrets.API_KEY }}
