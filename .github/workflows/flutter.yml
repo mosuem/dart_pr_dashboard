@@ -9,6 +9,10 @@ on:
   schedule:
     - cron: '0 0 * * 0' # weekly
 
+defaults:
+  run:
+    working-directory: pkgs/dart_pr_dashboard/
+    
 jobs:
   validate:
     runs-on: ubuntu-latest
@@ -17,7 +21,6 @@ jobs:
       - uses: subosito/flutter-action@v2
         with:
             channel: 'beta'
-      - run: cd pkgs/dart_pr_dashboard/
       - run: flutter pub get
       - run: flutter analyze --fatal-infos
       - run: dart format --set-exit-if-changed .
