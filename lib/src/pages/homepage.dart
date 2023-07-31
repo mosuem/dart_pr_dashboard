@@ -1,4 +1,4 @@
-import 'package:dart_triage_updater/data_diff.dart';
+import 'package:dart_triage_updater/diff.dart';
 import 'package:flutter/material.dart';
 import 'package:github/github.dart';
 
@@ -97,14 +97,14 @@ class _MyHomePageState extends State<MyHomePage>
             },
           ),
           const SizedBox.square(dimension: 16),
-          ValueListenableBuilder<List<DataDiff<PullRequest>>>(
+          ValueListenableBuilder<List<Diff<PullRequest>>>(
               valueListenable: widget.appModel.pullrequests,
               builder: (BuildContext context,
-                  List<DataDiff<PullRequest>> pullrequests, _) {
-                return ValueListenableBuilder<List<DataDiff<Issue>>>(
+                  List<Diff<PullRequest>> pullrequests, _) {
+                return ValueListenableBuilder<List<Diff<Issue>>>(
                     valueListenable: widget.appModel.issues,
-                    builder: (BuildContext context,
-                        List<DataDiff<Issue>> issues, _) {
+                    builder:
+                        (BuildContext context, List<Diff<Issue>> issues, _) {
                       return IconButton(
                         icon: const Icon(Icons.report),
                         onPressed: () async {

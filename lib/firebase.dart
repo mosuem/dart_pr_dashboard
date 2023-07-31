@@ -1,4 +1,3 @@
-import 'dart:convert';
 import 'dart:math';
 
 import 'package:dart_triage_updater/firebase_database.dart' as tr;
@@ -69,18 +68,12 @@ Stream<List<Issue>> streamIssuesFromFirebase() {
       .map((event) => event.snapshot)
       .where((snapshot) => snapshot.exists)
       .map((snapshot) => snapshot.value as Map<String, dynamic>)
-      .map((data) => getData<Issue>(data, Issue.fromJson)
-          .values
-          .expand((issues) => issues)
-          .toList());
+      .map((data) => getData<Issue>(data, Issue.fromJson));
 }
 
-Map<RepositorySlug, List<T>> getData<T>(Map<String, dynamic> idsToTimestamps,
+List<T> getData<T>(Map<String, dynamic> idsToTimestamps,
     T Function(Map<String, dynamic> initial) fromJson) {
-  return tr.DatabaseReference.extractDataFrom(idsToTimestamps, fromJson)
-      .values
-      .expand((list) => list)
-      .toList();
+  return tr.DatabaseReference.extractDataFrom(idsToTimestamps, fromJson);
 }
 
 Stream<List<PullRequest>> streamPullRequestsFromFirebase() {
@@ -91,8 +84,5 @@ Stream<List<PullRequest>> streamPullRequestsFromFirebase() {
       .map((event) => event.snapshot)
       .where((snapshot) => snapshot.exists)
       .map((snapshot) => snapshot.value as Map<String, dynamic>)
-      .map((data) => getData<PullRequest>(data, decodePR)
-          .values
-          .expand((issues) => issues)
-          .toList());
+      .map((data) => getData<PullRequest>(data, decodePR));
 }

@@ -1,7 +1,6 @@
 import 'dart:math';
 
 import 'package:collection/collection.dart';
-import 'package:dart_triage_updater/data_diff.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:github/github.dart';
@@ -9,17 +8,14 @@ import 'package:intl4x/datetime_format.dart';
 import 'package:intl4x/intl4x.dart';
 
 class ReportPage extends StatefulWidget {
-  final List<DataDiff<Issue>> issueChanges;
-  final List<DataDiff<PullRequest>> pullrequestChanges;
   final List<Issue> issues;
   final List<PullRequest> pullrequests;
 
-  ReportPage({
+  const ReportPage({
     super.key,
-    required this.issueChanges,
-    required this.pullrequestChanges,
-  })  : issues = issueChanges.map((e) => e.applied()!).toList(),
-        pullrequests = pullrequestChanges.map((e) => e.applied()!).toList();
+    required this.issues,
+    required this.pullrequests,
+  });
 
   @override
   State<ReportPage> createState() => _ReportPageState();
