@@ -8,9 +8,12 @@ import 'package:github/github.dart';
 import 'package:http/http.dart' as http;
 import 'package:test/test.dart';
 
-import '../local_test/pullsvsissues.dart';
+// import '../local_test/pullsvsissues.dart';
 
 void main() {
+  /// To run tests, set an authrequest for write access to the database.
+  AuthRequest? authRequest;
+
   final ref = DatabaseReference(authRequest);
   test(
     'addData',
