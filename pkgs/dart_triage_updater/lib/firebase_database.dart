@@ -139,11 +139,11 @@ class DatabaseReference {
     }
   }
 
-  Future<void> addData(UpdateType type, String data, String dataType) async {
+  Future<void> addData<S>(UpdateType<S> type) async {
     await sendRequest(
       (uri, d) async => await http.patch(uri, body: d),
-      Uri.parse('$firebaseUrl${type.name}/$dataType.json'),
-      data,
+      Uri.parse('$firebaseUrl${type.url}.json'),
+      jsonEncode({type.key: type.encode()}),
     );
   }
 
@@ -175,6 +175,14 @@ class DatabaseReference {
     return map.map((key, value) => MapEntry(
         RepositorySlugExtension.fromUrl(key),
         DateTime.fromMillisecondsSinceEpoch(value)));
+  }
+
+  Future<List<TimelineEvent>> getTimeline(UpdateType type, int id) async {
+    final uri = Uri.parse('$firebaseUrl${type.name}/timeline/$id.json');
+    final response =
+        await sendRequest((url, _) async => await http.get(url), uri);
+    final list = (jsonDecode(response.body) ?? []) as List;
+    return list.map((e) => TimelineEvent.fromJson(e)).toList();
   }
 
   Future<http.Response> sendRequest(
@@ -211,6 +219,24 @@ class DatabaseReference {
       final data = fromJson(idToData.value);
       list.add(data);
     }
+    return list;
+  }
+
+  Future<List<Issue>> getIssuesCreatedBetween({
+    required UpdateType type,
+    required DateTime from,
+    required DateTime to,
+  }) async {
+    final list = <Issue>[];
+    final uri = Uri.parse('$firebaseUrl${type.name}/data.json')
+        .replace(queryParameters: {
+      'orderBy': 'createdAt',
+      'startAt': from.millisecondsSinceEpoch,
+      'endAt': to.millisecondsSinceEpoch,
+    });
+    final response =
+        await sendRequest((p0, _) async => await http.get(uri), uri);
+    print(response.body);
     return list;
   }
 }

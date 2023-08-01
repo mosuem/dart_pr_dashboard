@@ -22,20 +22,3 @@ extension ReviewerAddition on PullRequest {
 
   bool get authorIsCopybara => user?.login == 'copybara-service[bot]';
 }
-
-Map<String, dynamic> encodePR(PullRequest pr) {
-  return {
-    'pr': pr,
-    'reviewers': pr.reviewers,
-  };
-}
-
-PullRequest decodePR(Map<String, dynamic> decoded) {
-  final decodedPR = decoded['pr'] as Map<String, dynamic>;
-  final decodedReviewers = decoded['reviewers'] as List?;
-  final pr = PullRequest.fromJson(decodedPR);
-  pr.reviewers = decodedReviewers?.map((e) => User.fromJson(e)).toList() ?? [];
-  pr.requestedReviewers?.removeWhere((requestedReviewer) => pr.reviewers
-      .any((reviewer) => reviewer.login == requestedReviewer.login));
-  return pr;
-}
