@@ -21,9 +21,7 @@ dependencies:
   vtable: ^0.4.0
   collection: ^1.17.2
   dart_triage_updater:
-    git:
-      url: git@github.com:mosuem/dart_triage_updater.git
-      ref: useTimelines
+    path: ../dart_triage_updater
 
 dev_dependencies:
   flutter_test:

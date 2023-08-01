@@ -9,6 +9,10 @@ on:
   schedule:
     - cron: '0 0 * * 0' # weekly
 
+defaults:
+  run:
+    working-directory: pkgs/dart_pr_dashboard/
+    
 jobs:
   validate:
     runs-on: ubuntu-latest
