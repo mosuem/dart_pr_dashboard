@@ -3,25 +3,24 @@ import 'dart:convert';
 import 'package:dart_triage_updater/pull_request_utils.dart';
 import 'package:github/github.dart';
 
-sealed class UpdateType<T> {
+sealed class UpdateType<S, T> {
   const UpdateType();
 
-  Object encode();
-  String? get name;
+  Object encode(T data);
+  T decode(Object decoded);
   String get url;
-  String get key;
+  String get name;
+  String key(S data);
 }
 
-final class IssueType extends UpdateType<Issue> {
-  final Issue issue;
-
-  const IssueType(this.issue);
-
-  static Issue decode(Object decoded) =>
-      _decodeIssue(decoded as Map<String, dynamic>);
+final class IssueType extends UpdateType<Issue, Issue> {
+  const IssueType();
 
   @override
-  Map<String, dynamic> encode() => _encodeIssue(issue);
+  Issue decode(Object decoded) => _decodeIssue(decoded as Map<String, dynamic>);
+
+  @override
+  Map<String, dynamic> encode(Issue data) => _encodeIssue(data);
 
   @override
   String get name => 'issues';
@@ -30,19 +29,18 @@ final class IssueType extends UpdateType<Issue> {
   String get url => '$name/data';
 
   @override
-  String get key => issue.id.toString();
+  String key(Issue data) => data.id.toString();
 }
 
-final class PullRequestType extends UpdateType<PullRequest> {
-  final PullRequest pr;
+final class PullRequestType extends UpdateType<PullRequest, PullRequest> {
+  const PullRequestType();
 
-  const PullRequestType(this.pr);
-
-  static PullRequest decode(Object decoded) =>
+  @override
+  PullRequest decode(Object decoded) =>
       _decodePR(decoded as Map<String, dynamic>);
 
   @override
-  Map<String, dynamic> encode() => _encodePR(pr);
+  Map<String, dynamic> encode(PullRequest data) => _encodePR(data);
 
   @override
   String get name => 'pullrequests';
@@ -51,40 +49,41 @@ final class PullRequestType extends UpdateType<PullRequest> {
   String get url => '$name/data';
 
   @override
-  String get key => pr.id.toString();
+  String key(PullRequest data) => data.id.toString();
 }
 
-final class TimelineType extends UpdateType<List<TimelineEvent>> {
-  final List<TimelineEvent> events;
+final class TimelineType<S, T> extends UpdateType<S, List<TimelineEvent>> {
+  final UpdateType<S, T> parent;
 
-  final UpdateType parent;
+  const TimelineType(this.parent);
 
-  const TimelineType(this.parent, this.events);
-
-  static List<TimelineEvent> decode(Object decoded) =>
+  @override
+  List<TimelineEvent> decode(Object decoded) =>
       _decodeTimeline(decoded as List);
 
   @override
-  List encode() => _encodeTimeline(events);
+  List encode(List<TimelineEvent> data) => _encodeTimeline(data);
 
   @override
   String get name => 'timeline';
 
   @override
-  String get url => '${parent.name}/timeline';
+  String get url {
+    return '${parent.name}/timeline';
+  }
 
   @override
-  String get key => parent.key;
+  String key(S data) => parent.key(data);
 }
 
 final class IssueTestType extends IssueType {
-  const IssueTestType(super.issue);
-
-  static Issue decode(Object decoded) =>
-      _decodeIssue(decoded as Map<String, dynamic>);
+  const IssueTestType();
 
   @override
-  Map<String, dynamic> encode() => _encodeIssue(issue);
+  Issue decode(Object decoded) => _decodeIssue(decoded as Map<String, dynamic>);
+
+  @override
+  Map<String, dynamic> encode(Issue data) => _encodeIssue(data);
 
   @override
   String get name => 'testType';
@@ -93,17 +92,18 @@ final class IssueTestType extends IssueType {
   String get url => '$name/data';
 
   @override
-  String get key => issue.id.toString();
+  String key(Issue data) => data.id.toString();
 }
 
 final class PullRequestTestType extends PullRequestType {
-  const PullRequestTestType(super.pr);
+  const PullRequestTestType();
 
-  static PullRequest decode(Object decoded) =>
+  @override
+  PullRequest decode(Object decoded) =>
       _decodePR(decoded as Map<String, dynamic>);
 
   @override
-  Map<String, dynamic> encode() => _encodePR(pr);
+  Map<String, dynamic> encode(PullRequest data) => _encodePR(data);
 
   @override
   String get name => 'testType';
@@ -112,7 +112,7 @@ final class PullRequestTestType extends PullRequestType {
   String get url => '$name/data';
 
   @override
-  String get key => pr.id.toString();
+  String key(PullRequest data) => data.id.toString();
 }
 
 Map<String, dynamic> _encodePR(PullRequest pr) {

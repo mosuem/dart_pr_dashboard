@@ -34,7 +34,7 @@ Stream<List<Issue>> streamIssuesFromFirebase() {
       .where((snapshot) => snapshot.exists)
       .map((snapshot) => snapshot.value as Map<String, dynamic>)
       .map((reposToIssues) => tr.DatabaseReference.extractDataFrom(
-          reposToIssues, IssueType.decode));
+          reposToIssues, const IssueType()));
 }
 
 Stream<List<PullRequest>> streamPullRequestsFromFirebase() {
@@ -48,5 +48,5 @@ Stream<List<PullRequest>> streamPullRequestsFromFirebase() {
       .where((snapshot) => snapshot.exists)
       .map((snapshot) => snapshot.value as Map<String, dynamic>)
       .map((reposToIssues) => tr.DatabaseReference.extractDataFrom(
-          reposToIssues, PullRequestType.decode));
+          reposToIssues, const PullRequestType()));
 }

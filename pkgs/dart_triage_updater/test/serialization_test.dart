@@ -10,10 +10,10 @@ void main() {
     final pullRequest = PullRequest(commentsCount: 2);
     pullRequest.reviewers = [User(id: 5), User(id: 2)];
 
-    final pullRequestType = PullRequestType(pullRequest);
-    final encoded = pullRequestType.encode();
+    final pullRequestType = PullRequestType();
+    final encoded = pullRequestType.encode(pullRequest);
     final simulateJsonTransport = jsonDecode(jsonEncode(encoded));
-    final decodedPR = PullRequestType.decode(simulateJsonTransport);
+    final decodedPR = pullRequestType.decode(simulateJsonTransport);
 
     expect(decodedPR.commentsCount, equals(pullRequest.commentsCount));
     expect(decodedPR.reviewers.map((e) => e.id),
@@ -26,9 +26,10 @@ void main() {
       closedAt: DateTime.now().add(Duration(hours: 1)),
     );
 
-    final encoded = IssueType(issue).encode();
+    final issueType = IssueType();
+    final encoded = issueType.encode(issue);
     final simulateJsonTransport = jsonDecode(jsonEncode(encoded));
-    final decodedIssue = IssueType.decode(simulateJsonTransport);
+    final decodedIssue = issueType.decode(simulateJsonTransport);
 
     expect(decodedIssue.commentsCount, equals(issue.commentsCount));
     expect(decodedIssue.createdAt!.millisecondsSinceEpoch,
@@ -42,9 +43,10 @@ void main() {
       LabelEvent(createdAt: DateTime.now().add(Duration(days: 1))),
     ];
 
-    final encoded = TimelineType(IssueTestType(Issue()), events).encode();
+    final timelineType = TimelineType(IssueTestType());
+    final encoded = timelineType.encode(events);
     final simulateJsonTransport = jsonDecode(jsonEncode(encoded));
-    final decodedIssue = TimelineType.decode(simulateJsonTransport);
+    final decodedIssue = timelineType.decode(simulateJsonTransport);
 
     expect(decodedIssue.first.createdAt!.millisecondsSinceEpoch,
         closeTo(events.first.createdAt!.millisecondsSinceEpoch, 1000));

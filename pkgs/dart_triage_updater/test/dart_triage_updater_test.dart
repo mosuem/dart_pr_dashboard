@@ -33,10 +33,10 @@ void main() {
       );
       final events = [TimelineEvent(createdAt: DateTime.now())];
 
-      await ref.addData(IssueTestType(issue));
-      await ref.addData(IssueTestType(issue2));
-      await ref.addData(PullRequestTestType(pullRequest));
-      await ref.addData(TimelineType(IssueTestType(issue), events));
+      await ref.addData(IssueTestType(), issue, issue);
+      await ref.addData(IssueTestType(), issue2, issue2);
+      await ref.addData(PullRequestTestType(), pullRequest, pullRequest);
+      await ref.addData(TimelineType(IssueTestType()), issue, events);
     },
     skip: true,
   );
@@ -47,7 +47,7 @@ void main() {
       final uri = Uri.parse('${firebaseUrl}testType/data.json');
       final response = await http.get(uri);
       final extractDataFrom = DatabaseReference.extractDataFrom(
-          jsonDecode(response.body), IssueType.decode);
+          jsonDecode(response.body), IssueType());
       expect(extractDataFrom, isNotEmpty);
     },
     skip: true,
@@ -86,7 +86,7 @@ void main() {
         number: 3,
       );
       await TriageUpdater(getGithub())
-          .savePullRequest(repositorySlug, PullRequestTestType(pullRequest));
+          .savePullRequest(repositorySlug, PullRequestTestType(), pullRequest);
     },
     skip: true,
   );
@@ -105,7 +105,7 @@ void main() {
       final repositorySlug = RepositorySlug('mosuem', 'dart_pr_dashboard');
       final issue = Issue(id: 8888, number: 22);
       await TriageUpdater(getGithub())
-          .saveIssue(repositorySlug, IssueTestType(issue));
+          .saveIssue(repositorySlug, IssueTestType(), issue);
     },
     skip: true,
   );

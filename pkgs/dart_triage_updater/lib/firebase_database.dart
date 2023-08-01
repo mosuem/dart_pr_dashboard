@@ -139,11 +139,11 @@ class DatabaseReference {
     }
   }
 
-  Future<void> addData<S>(UpdateType<S> type) async {
+  Future<void> addData<S, T>(UpdateType<S, T> type, S element, T data) async {
     await sendRequest(
       (uri, d) async => await http.patch(uri, body: d),
       Uri.parse('$firebaseUrl${type.url}.json'),
-      jsonEncode({type.key: type.encode()}),
+      jsonEncode({type.key(element): type.encode(data)}),
     );
   }
 
@@ -208,28 +208,28 @@ class DatabaseReference {
     return response;
   }
 
-  static List<T> extractDataFrom<T>(
+  static List<T> extractDataFrom<S, T>(
     Map<String, dynamic> idsToData,
-    T Function(Map<String, dynamic> json) fromJson,
+    UpdateType<S, T> fromJson,
   ) {
     final list = <T>[];
     for (final idToData in idsToData.entries) {
       // ignore: unused_local_variable
       final id = idToData.key;
-      final data = fromJson(idToData.value);
+      final data = fromJson.decode(idToData.value);
       list.add(data);
     }
     return list;
   }
 
-  Future<List<Issue>> getIssuesCreatedBetween({
-    required UpdateType type,
+  Future<List<T>> getCreatedBetween<S, T>({
+    required UpdateType<S, T> type,
     required DateTime from,
     required DateTime to,
   }) async {
-    final list = <Issue>[];
-    final uri = Uri.parse('$firebaseUrl${type.name}/data.json')
-        .replace(queryParameters: {
+    final list = <T>[];
+    final uri =
+        Uri.parse('$firebaseUrl${type.url}.json').replace(queryParameters: {
       'orderBy': 'createdAt',
       'startAt': from.millisecondsSinceEpoch,
       'endAt': to.millisecondsSinceEpoch,
