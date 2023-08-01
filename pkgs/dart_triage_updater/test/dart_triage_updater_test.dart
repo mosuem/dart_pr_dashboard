@@ -9,7 +9,10 @@ import 'package:http/http.dart' as http;
 import 'package:test/test.dart';
 
 void main() {
-  final ref = DatabaseReference(UpdateType.testType);
+  /// To run tests, set an authrequest for write access to the database.
+  AuthRequest? authRequest;
+
+  final ref = DatabaseReference(authRequest);
   test(
     'addData',
     () async {
@@ -21,16 +24,17 @@ void main() {
         id: 2345,
         createdAt: DateTime.now(),
       );
-      await ref.addData(jsonEncode({issue.id.toString(): issue}), 'data');
-      await ref.addData(jsonEncode({issue2.id.toString(): issue2}), 'data');
+      await ref.addData(UpdateType.testType,
+          jsonEncode({issue.id.toString(): issue}), 'data');
+      await ref.addData(UpdateType.testType,
+          jsonEncode({issue2.id.toString(): issue2}), 'data');
     },
     skip: true,
   );
   test(
     'addGooglers',
     () async {
-      await DatabaseReference.saveGooglers(
-          [User(login: 'test1'), User(login: 'test2')]);
+      await ref.saveGooglers([User(login: 'test1'), User(login: 'test2')]);
     },
     skip: true,
   );
@@ -38,8 +42,8 @@ void main() {
     'set and get last updated',
     () async {
       final repositorySlug = RepositorySlug('mosuem', 'dart_triage_updater');
-      await DatabaseReference.setLastUpdated(repositorySlug);
-      final dateTime = await DatabaseReference.getLastUpdated();
+      await ref.setLastUpdated(repositorySlug);
+      final dateTime = await ref.getLastUpdated();
       expect(
         dateTime[repositorySlug]!.millisecondsSinceEpoch,
         closeTo(
@@ -47,6 +51,7 @@ void main() {
             Duration(seconds: 1).inMilliseconds),
       );
     },
+    skip: true,
   );
 
   test(
