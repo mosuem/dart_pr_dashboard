@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:collection/collection.dart';
 import 'package:dart_triage_updater/pull_request_utils.dart';
 import 'package:github/github.dart';
 
