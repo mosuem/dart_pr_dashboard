@@ -49,7 +49,10 @@ class TriageUpdater {
         .map((repository) => repository.slug())
         .where((slug) => !exludeRepos.contains(slug))
         .toList()
-      ..shuffle();
+
+    dartLangRepos
+        .sortBy<num>((slug) => lastUpdated[slug]?.millisecondsSinceEpoch ?? 0);
+    
     final repos = [...dartLangRepos, ...includeRepos];
     for (var i = 0; i < repos.length; i++) {
       final slug = repos[i];
