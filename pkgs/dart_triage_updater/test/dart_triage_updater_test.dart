@@ -8,6 +8,8 @@ import 'package:github/github.dart';
 import 'package:http/http.dart' as http;
 import 'package:test/test.dart';
 
+// import '../local_test/pullsvsissues.dart';
+
 void main() {
   /// To run tests, set an authrequest for write access to the database.
   AuthRequest? authRequest;
@@ -24,13 +26,33 @@ void main() {
         id: 2345,
         createdAt: DateTime.now(),
       );
-      await ref.addData(UpdateType.testType,
-          jsonEncode({issue.id.toString(): issue}), 'data');
-      await ref.addData(UpdateType.testType,
-          jsonEncode({issue2.id.toString(): issue2}), 'data');
+      final pullRequest = PullRequest(
+        createdAt: DateTime.now(),
+        title: 'PR Test Title',
+        id: 000,
+      );
+      final events = [TimelineEvent(createdAt: DateTime.now())];
+
+      await ref.addData(IssueTestType(), issue, issue);
+      await ref.addData(IssueTestType(), issue2, issue2);
+      await ref.addData(PullRequestTestType(), pullRequest, pullRequest);
+      await ref.addData(TimelineType(IssueTestType()), issue, events);
     },
     skip: true,
   );
+
+  test(
+    'Decode data',
+    () async {
+      final uri = Uri.parse('${firebaseUrl}testType/data.json');
+      final response = await http.get(uri);
+      final extractDataFrom = DatabaseReference.extractDataFrom(
+          jsonDecode(response.body), IssueType());
+      expect(extractDataFrom, isNotEmpty);
+    },
+    skip: true,
+  );
+
   test(
     'addGooglers',
     () async {
@@ -38,6 +60,7 @@ void main() {
     },
     skip: true,
   );
+
   test(
     'set and get last updated',
     () async {
@@ -63,7 +86,7 @@ void main() {
         number: 3,
       );
       await TriageUpdater(getGithub())
-          .savePullRequest(repositorySlug, pullRequest, UpdateType.testType);
+          .savePullRequest(repositorySlug, PullRequestTestType(), pullRequest);
     },
     skip: true,
   );
@@ -82,20 +105,7 @@ void main() {
       final repositorySlug = RepositorySlug('mosuem', 'dart_pr_dashboard');
       final issue = Issue(id: 8888, number: 22);
       await TriageUpdater(getGithub())
-          .saveIssue(repositorySlug, issue, UpdateType.testType);
-    },
-    skip: true,
-  );
-
-  test(
-    'Decode data',
-    () async {
-      final uri =
-          Uri.parse('$firebaseUrl${UpdateType.testType.name}/data.json');
-      final response = await http.get(uri);
-      final extractDataFrom = DatabaseReference.extractDataFrom(
-          jsonDecode(response.body), Issue.fromJson);
-      expect(extractDataFrom, isNotEmpty);
+          .saveIssue(repositorySlug, IssueTestType(), issue);
     },
     skip: true,
   );

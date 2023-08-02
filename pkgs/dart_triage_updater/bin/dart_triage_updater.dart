@@ -5,7 +5,6 @@ import 'package:args/args.dart';
 import 'package:dart_triage_updater/dart_triage_updater.dart';
 import 'package:dart_triage_updater/firebase_database.dart';
 import 'package:dart_triage_updater/github.dart';
-import 'package:dart_triage_updater/update_type.dart';
 
 Future<void> main(List<String> arguments) async {
   final argParser = ArgParser()
@@ -44,13 +43,10 @@ Future<void> main(List<String> arguments) async {
     exit(1);
   }
   final github = getGithub(apikey);
-  final updateTypes = toUpdate
-      .map((e) => UpdateType.values.firstWhere((type) => type.name == e))
-      .toList();
   final authRequest = AuthRequest(
     email: email,
     password: password,
     returnSecureToken: true,
   );
-  await TriageUpdater(github, authRequest).updateThese(updateTypes);
+  await TriageUpdater(github, authRequest).updateThese(toUpdate);
 }

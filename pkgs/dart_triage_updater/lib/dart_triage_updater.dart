@@ -1,10 +1,9 @@
 import 'dart:async';
-import 'dart:convert';
 
+import 'package:dart_triage_updater/pull_request_utils.dart';
 import 'package:github/github.dart';
 
 import 'firebase_database.dart';
-import 'pull_request_utils.dart';
 import 'repos.dart';
 import 'update_type.dart';
 
@@ -17,11 +16,11 @@ class TriageUpdater {
   TriageUpdater(this.github, [AuthRequest? request])
       : ref = DatabaseReference(request);
 
-  Future<void> updateThese(List<UpdateType> updateTypes) async {
-    if (updateTypes.contains(UpdateType.issues)) {
-      await update(updateTypes.contains(UpdateType.pullrequests));
+  Future<void> updateThese(List<String> updateTypes) async {
+    if (updateTypes.contains('issues')) {
+      await update(updateTypes.contains('pullrequests'));
     }
-    if (updateTypes.contains(UpdateType.googlers)) {
+    if (updateTypes.contains('googlers')) {
       await updateGooglers(github);
     }
     updater.add('Done!');
@@ -93,34 +92,33 @@ class TriageUpdater {
     for (final issue in issues) {
       final issuePR = issue.pullRequest;
       if (issuePR == null) {
-        await saveIssue(slug, issue);
+        await saveIssue(slug, IssueType(), issue);
       } else if (getPullRequests) {
         final prNumberStr = issuePR.htmlUrl!.split('/').last;
         final prNumber = int.parse(prNumberStr);
         final pullRequest = await github.pullRequests.get(slug, prNumber);
-        await savePullRequest(slug, pullRequest);
+        await savePullRequest(slug, PullRequestType(), pullRequest);
       }
     }
   }
 
-  Future<void> saveIssue(RepositorySlug slug, Issue issue,
-      [UpdateType type = UpdateType.issues]) async {
+  Future<void> saveIssue(
+      RepositorySlug slug, IssueType type, Issue issue) async {
     try {
       final timeline =
           await github.issues.listTimeline(slug, issue.number).toList();
       await wait();
       updater.add(
           '\tHandle timeline of issue ${issue.number} from ${slug.fullName} with length ${timeline.length}');
-      await ref.addData(
-          type, jsonEncode({issue.id.toString(): timeline}), 'timeline');
+      await ref.addData(TimelineType(type), issue, timeline);
     } catch (e) {
       updater.add('\tError when getting timeline');
     }
-    await ref.addData(type, jsonEncode({issue.id.toString(): issue}), 'data');
+    await ref.addData(type, issue, issue);
   }
 
-  Future<void> savePullRequest(RepositorySlug slug, PullRequest pr,
-      [UpdateType type = UpdateType.pullrequests]) async {
+  Future<void> savePullRequest(
+      RepositorySlug slug, PullRequestType type, PullRequest pr) async {
     updater.add('\tHandle PR ${pr.number!} from ${slug.fullName}');
     try {
       final timeline =
@@ -128,15 +126,13 @@ class TriageUpdater {
       await wait();
       updater.add(
           '\tHandle timeline of PR ${pr.number!} from ${slug.fullName} with length ${timeline.length}');
-      await ref.addData(
-          type, jsonEncode({pr.id!.toString(): timeline}), 'timeline');
+      await ref.addData(TimelineType(type), pr, timeline);
     } catch (e) {
       updater.add('\tError when getting timeline');
     }
     final list = await getReviewers(slug, pr);
     pr.reviewers = list;
-    await ref.addData(
-        type, jsonEncode({pr.id!.toString(): encodePR(pr)}), 'data');
+    await ref.addData(type, pr, pr);
   }
 
   Future<void> wait() async =>

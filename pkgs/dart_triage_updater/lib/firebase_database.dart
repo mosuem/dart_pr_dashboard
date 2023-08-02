@@ -139,11 +139,11 @@ class DatabaseReference {
     }
   }
 
-  Future<void> addData(UpdateType type, String data, String dataType) async {
+  Future<void> addData<S, T>(UpdateType<S, T> type, S element, T data) async {
     await sendRequest(
       (uri, d) async => await http.patch(uri, body: d),
-      Uri.parse('$firebaseUrl${type.name}/$dataType.json'),
-      data,
+      Uri.parse('$firebaseUrl${type.url}.json'),
+      jsonEncode({type.key(element): type.encode(data)}),
     );
   }
 
@@ -177,6 +177,14 @@ class DatabaseReference {
         DateTime.fromMillisecondsSinceEpoch(value)));
   }
 
+  Future<List<TimelineEvent>> getTimeline(UpdateType type, int id) async {
+    final uri = Uri.parse('$firebaseUrl${type.name}/timeline/$id.json');
+    final response =
+        await sendRequest((url, _) async => await http.get(url), uri);
+    final list = (jsonDecode(response.body) ?? []) as List;
+    return list.map((e) => TimelineEvent.fromJson(e)).toList();
+  }
+
   Future<http.Response> sendRequest(
     Future<http.Response> Function(Uri, Object?) request,
     Uri uri, [
@@ -200,17 +208,35 @@ class DatabaseReference {
     return response;
   }
 
-  static List<T> extractDataFrom<T>(
+  static List<T> extractDataFrom<S, T>(
     Map<String, dynamic> idsToData,
-    T Function(Map<String, dynamic> json) fromJson,
+    UpdateType<S, T> fromJson,
   ) {
     final list = <T>[];
     for (final idToData in idsToData.entries) {
       // ignore: unused_local_variable
       final id = idToData.key;
-      final data = fromJson(idToData.value);
+      final data = fromJson.decode(idToData.value);
       list.add(data);
     }
+    return list;
+  }
+
+  Future<List<T>> getCreatedBetween<S, T>({
+    required UpdateType<S, T> type,
+    required DateTime from,
+    required DateTime to,
+  }) async {
+    final list = <T>[];
+    final uri =
+        Uri.parse('$firebaseUrl${type.url}.json').replace(queryParameters: {
+      'orderBy': 'createdAt',
+      'startAt': from.millisecondsSinceEpoch,
+      'endAt': to.millisecondsSinceEpoch,
+    });
+    final response =
+        await sendRequest((p0, _) async => await http.get(uri), uri);
+    print(response.body);
     return list;
   }
 }
