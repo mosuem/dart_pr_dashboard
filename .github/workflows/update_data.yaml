@@ -12,7 +12,7 @@ on:
     branches:
       - main
   schedule:
-    - cron: '0 */3 * * *' # Every 3 hours
+    - cron: '0 */6 * * *' # Every 3 hours
     - cron: '0 0 * * 0' # Once a week, at 00:00 UTC
 
 defaults:
