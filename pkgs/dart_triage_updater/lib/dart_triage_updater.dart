@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:collection/collection.dart';
 import 'package:dart_triage_updater/pull_request_utils.dart';
 import 'package:github/github.dart';
 
@@ -48,8 +49,10 @@ class TriageUpdater {
         .where((repository) => !repository.archived)
         .map((repository) => repository.slug())
         .where((slug) => !exludeRepos.contains(slug))
-        .toList()
-      ..shuffle();
+        .toList();
+
+    dartLangRepos
+        .sortBy<num>((slug) => lastUpdated[slug]?.millisecondsSinceEpoch ?? 0);
     final repos = [...dartLangRepos, ...includeRepos];
     for (var i = 0; i < repos.length; i++) {
       final slug = repos[i];

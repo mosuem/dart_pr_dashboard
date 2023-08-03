@@ -177,8 +177,9 @@ class DatabaseReference {
         DateTime.fromMillisecondsSinceEpoch(value)));
   }
 
-  Future<List<TimelineEvent>> getTimeline(UpdateType type, int id) async {
-    final uri = Uri.parse('$firebaseUrl${type.name}/timeline/$id.json');
+  Future<List<TimelineEvent>> getTimeline<S, T>(
+      TimelineType<S, T> type, int id) async {
+    final uri = Uri.parse('$firebaseUrl${type.url}/$id.json');
     final response =
         await sendRequest((url, _) async => await http.get(url), uri);
     final list = (jsonDecode(response.body) ?? []) as List;

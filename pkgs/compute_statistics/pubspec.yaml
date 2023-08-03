@@ -1,0 +1,19 @@
+name: compute_statistics
+description: Compute statistics for the dashboard.
+version: 1.0.0
+
+publish_to: 'none'
+
+environment:
+  sdk: ^3.1.0-310.0.dev
+
+# Add regular dependencies here.
+dependencies:
+  dart_triage_updater:
+    path: ../dart_triage_updater
+  github: ^9.17.0
+  collection: ^1.18.0
+
+dev_dependencies:
+  lints: ^2.0.0
+  test: ^1.21.0
