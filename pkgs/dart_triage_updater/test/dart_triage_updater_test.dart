@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:dart_triage_updater/dart_triage_updater.dart';
+import 'package:dart_triage_updater/pull_request_utils.dart';
 import 'package:dart_triage_updater/firebase_database.dart';
 import 'package:dart_triage_updater/github.dart';
 import 'package:dart_triage_updater/update_type.dart';
@@ -81,15 +82,36 @@ void main() {
     'save PR',
     () async {
       final repositorySlug = RepositorySlug('mosuem', 'dart_triage_updater');
+      final user2 = User(avatarUrl: 'someUrl', login: 'somelogin');
       final pullRequest = PullRequest(
         id: 99999,
         number: 3,
+        user: user2,
+        labels: [
+          IssueLabel(
+            name: 'testname',
+            description: 'verylongdesc',
+          )
+        ],
+        base: PullRequestHead(
+            user: user2,
+            repo: Repository(
+              name: 'test',
+              url: 'testurl',
+              owner: UserInformation('login', 1234, 'avatarUrl', 'htmlUrl'),
+            )),
+        head: PullRequestHead(user: user2),
       );
       await TriageUpdater(getGithub())
           .savePullRequest(repositorySlug, PullRequestTestType(), pullRequest);
     },
-    skip: true,
+    // skip: true,
   );
+
+  test('get PR', () async {
+    final map = await DatabaseReference().getData(PullRequestTestType(), 99999);
+    print(map?.reviewers);
+  });
   test(
     'save issues',
     () async {

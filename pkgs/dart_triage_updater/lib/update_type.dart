@@ -106,7 +106,7 @@ final class PullRequestTestType extends PullRequestType {
   Map<String, dynamic> encode(PullRequest data) => _encodePR(data);
 
   @override
-  String get name => 'testType';
+  String get name => 'testTypePR';
 
   @override
   String get url => '$name/data';
@@ -116,8 +116,44 @@ final class PullRequestTestType extends PullRequestType {
 }
 
 Map<String, dynamic> _encodePR(PullRequest pr) {
-  final map = jsonDecode(jsonEncode(pr));
+  final map = jsonDecode(jsonEncode(pr)) as Map<String, dynamic>;
   map['reviewers'] = pr.reviewers;
+  if (map['base']?['repo']?['url'] != null) {
+    map['base']?['repo'] = {'url': map['base']?['repo']?['url']};
+  }
+  if (map['head']?['repo']?['url'] != null) {
+    map['head']?['repo'] = {'url': map['head']?['repo']?['url']};
+  }
+  map.remove('body');
+
+  if (map['head']?['user']?['login'] != null) {
+    map['head']?['user'] = {'login': map['head']?['user']?['login']};
+  }
+  if (map['base']?['user']?['login'] != null) {
+    map['base']?['user'] = {'login': map['base']?['user']?['login']};
+  }
+  if (map['user']?['login'] != null) {
+    map['user'] = {'login': map['user']?['login']};
+  }
+  if (map['merged_by']?['login'] != null) {
+    map['merged_by'] = {'login': map['merged_by']?['login']};
+  }
+  if (map['reviewers'] != null) {
+    map['reviewers'] = (map['reviewers'] as List).map((e) {
+      e as User;
+      if (e.login != null) {
+        return {'login': e.login};
+      } else {
+        return e;
+      }
+    }).toList();
+  }
+  if (map['labels'] != null) {
+    map['labels'] = (map['labels'] as List)
+        .map((e) => {'name': (e as Map)['name'] ?? ''})
+        .toList();
+  }
+
   return map;
 }
 
@@ -132,8 +168,18 @@ PullRequest _decodePR(Map<String, dynamic> decoded) {
 
 List _encodeTimeline(List<TimelineEvent> timelineEvent) {
   return timelineEvent.map((e) {
-    final map = jsonDecode(jsonEncode(e));
+    final map = jsonDecode(jsonEncode(e)) as Map<String, dynamic>;
     map['created_at'] = e.createdAt?.millisecondsSinceEpoch;
+    map.remove('body');
+    if (map['actor']?['login'] != null) {
+      map['actor'] = {'login': map['actor']?['login']};
+    }
+    if (map['assignee']?['login'] != null) {
+      map['assignee'] = {'login': map['assignee']?['login']};
+    }
+    if (map['user']?['login'] != null) {
+      map['user'] = {'login': map['user']?['login']};
+    }
     return map;
   }).toList();
 }
@@ -150,28 +196,29 @@ List<TimelineEvent> _decodeTimeline(List decoded) {
 }
 
 Issue _decodeIssue(Map<String, dynamic> decoded) {
-  if (decoded['created_at'] != null) {
-    decoded['created_at'] =
-        DateTime.fromMillisecondsSinceEpoch(decoded['created_at'])
-            .toIso8601String();
-  }
-  if (decoded['closed_at'] != null) {
-    decoded['closed_at'] =
-        DateTime.fromMillisecondsSinceEpoch(decoded['closed_at'])
-            .toIso8601String();
-  }
-  if (decoded['updated_at'] != null) {
-    decoded['updated_at'] =
-        DateTime.fromMillisecondsSinceEpoch(decoded['updated_at'])
-            .toIso8601String();
-  }
+  setField(decoded, 'created_at',
+      (int v) => DateTime.fromMillisecondsSinceEpoch(v).toIso8601String());
+  setField(decoded, 'closed_at',
+      (int v) => DateTime.fromMillisecondsSinceEpoch(v).toIso8601String());
+  setField(decoded, 'updated_at',
+      (int v) => DateTime.fromMillisecondsSinceEpoch(v).toIso8601String());
+  setField(decoded, 'user', (String v) => jsonEncode(User(login: v)));
   return Issue.fromJson(decoded);
 }
 
+void setField<T>(
+    Map<String, dynamic> decoded, String key, Object Function(T v) value) {
+  if (decoded[key] != null) {
+    decoded[key] = value(decoded[key]);
+  }
+}
+
 Map<String, dynamic> _encodeIssue(Issue issue) {
-  final map = jsonDecode(jsonEncode(issue));
+  final map = jsonDecode(jsonEncode(issue)) as Map<String, dynamic>;
   map['created_at'] = issue.createdAt?.millisecondsSinceEpoch;
   map['closed_at'] = issue.closedAt?.millisecondsSinceEpoch;
   map['updated_at'] = issue.updatedAt?.millisecondsSinceEpoch;
+  map['user'] = {'login': issue.user?.login};
+  map.remove('body');
   return map;
 }
