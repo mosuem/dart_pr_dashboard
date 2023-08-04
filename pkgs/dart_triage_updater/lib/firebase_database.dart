@@ -258,7 +258,7 @@ class DatabaseReference {
   }
 
   Future<List<int>?> getIds(UpdateType type, [String? path]) async {
-    var andPath = path != null ? '/$path' : '';
+    final andPath = path != null ? '/$path' : '';
     final uri = Uri.parse('$firebaseUrl${type.url}$andPath.json')
         .replace(queryParameters: {'shallow': 'true'});
     final response =

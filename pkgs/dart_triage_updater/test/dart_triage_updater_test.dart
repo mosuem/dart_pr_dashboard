@@ -23,20 +23,18 @@ void main() {
         id: 1234,
         createdAt: DateTime.now(),
       );
-      final issue2 = Issue(
-        id: 2345,
-        createdAt: DateTime.now(),
-      );
-      final pullRequest = PullRequest(
-        createdAt: DateTime.now(),
-        title: 'PR Test Title',
-        id: 000,
-      );
-      final events = [TimelineEvent(createdAt: DateTime.now())];
+      final user2 = User(login: 'testlogin', avatarUrl: 'avatarUrl');
+      final issue2 = Issue(id: 2345, createdAt: DateTime.now(), user: user2);
+      final events = [
+        CommentEvent(
+          createdAt: DateTime.now(),
+          actor: user2,
+          body: 'longbody',
+        )
+      ];
 
       await ref.addData(IssueTestType(), issue, issue);
       await ref.addData(IssueTestType(), issue2, issue2);
-      await ref.addData(PullRequestTestType(), pullRequest, pullRequest);
       await ref.addData(TimelineType(IssueTestType()), issue, events);
     },
     skip: true,
@@ -110,7 +108,11 @@ void main() {
 
   test('get PR', () async {
     final map = await DatabaseReference().getData(PullRequestTestType(), 99999);
-    print(map?.reviewers);
+    expect(map!.reviewers, isNotEmpty);
+  });
+  test('get Issues', () async {
+    final map = await DatabaseReference().getData(IssueTestType(), 2345);
+    expect(map!.user, isNotNull);
   });
   test(
     'save issues',

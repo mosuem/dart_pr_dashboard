@@ -171,17 +171,24 @@ List _encodeTimeline(List<TimelineEvent> timelineEvent) {
     final map = jsonDecode(jsonEncode(e)) as Map<String, dynamic>;
     map['created_at'] = e.createdAt?.millisecondsSinceEpoch;
     map.remove('body');
-    if (map['actor']?['login'] != null) {
-      map['actor'] = {'login': map['actor']!['login']};
-    }
-    if (map['assignee']?['login'] != null) {
-      map['assignee'] = {'login': map['assignee']!['login']};
-    }
-    if (map['user']?['login'] != null) {
-      map['user'] = {'login': map['user']!['login']};
-    }
+    map.remove('bodyHtml');
+    map.remove('bodyText');
+    map.remove('message');
+    reduceUser(map, 'actor');
+    reduceUser(map, 'assignee');
+    reduceUser(map, 'author');
+    reduceUser(map, 'user');
+    reduceUser(map, 'requested_reviewer');
+    reduceUser(map, 'review_requester');
+    reduceUser(map, 'committer');
     return map;
   }).toList();
+}
+
+void reduceUser(Map<String, dynamic> map, String key) {
+  if (map[key]?['login'] != null) {
+    map[key] = {'login': map[key]!['login']};
+  }
 }
 
 List<TimelineEvent> _decodeTimeline(List decoded) {
