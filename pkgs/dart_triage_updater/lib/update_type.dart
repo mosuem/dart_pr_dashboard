@@ -172,13 +172,13 @@ List _encodeTimeline(List<TimelineEvent> timelineEvent) {
     map['created_at'] = e.createdAt?.millisecondsSinceEpoch;
     map.remove('body');
     if (map['actor']?['login'] != null) {
-      map['actor'] = {'login': map['actor']?['login']};
+      map['actor'] = {'login': map['actor']!['login']};
     }
     if (map['assignee']?['login'] != null) {
-      map['assignee'] = {'login': map['assignee']?['login']};
+      map['assignee'] = {'login': map['assignee']!['login']};
     }
     if (map['user']?['login'] != null) {
-      map['user'] = {'login': map['user']?['login']};
+      map['user'] = {'login': map['user']!['login']};
     }
     return map;
   }).toList();
@@ -202,7 +202,7 @@ Issue _decodeIssue(Map<String, dynamic> decoded) {
       (int v) => DateTime.fromMillisecondsSinceEpoch(v).toIso8601String());
   setField(decoded, 'updated_at',
       (int v) => DateTime.fromMillisecondsSinceEpoch(v).toIso8601String());
-  setField(decoded, 'user', (String v) => jsonEncode(User(login: v)));
+  setField(decoded, 'user', (Map<String, dynamic> v) => {'login': v['login']});
   return Issue.fromJson(decoded);
 }
 
@@ -219,6 +219,31 @@ Map<String, dynamic> _encodeIssue(Issue issue) {
   map['closed_at'] = issue.closedAt?.millisecondsSinceEpoch;
   map['updated_at'] = issue.updatedAt?.millisecondsSinceEpoch;
   map['user'] = {'login': issue.user?.login};
+  set(map, 'assignee', 'login', issue.assignee?.login);
+
+  if (map['assignees'] != null) {
+    map['assignees'] = (map['assignees'] as List).map((e) {
+      final e2 = e as Map<String, dynamic>;
+      if (e2['login'] != null) {
+        return {'login': e2['login']};
+      } else {
+        return e2;
+      }
+    }).toList();
+  }
+
+  if (map['labels'] != null) {
+    map['labels'] = (map['labels'] as List)
+        .map((e) => {'name': (e as Map)['name'] ?? ''})
+        .toList();
+  }
+
   map.remove('body');
   return map;
+}
+
+void set(Map<String, dynamic> map, String key, String field, String? value) {
+  if (map[key]?[field] != null) {
+    map[key] = {field: value};
+  }
 }
