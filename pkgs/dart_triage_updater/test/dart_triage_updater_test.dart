@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:collection/collection.dart';
 import 'package:dart_triage_updater/dart_triage_updater.dart';
+import 'package:dart_triage_updater/pull_request_utils.dart';
 import 'package:dart_triage_updater/firebase_database.dart';
 import 'package:dart_triage_updater/github.dart';
 import 'package:dart_triage_updater/update_type.dart';
@@ -23,20 +24,18 @@ void main() {
         id: 1234,
         createdAt: DateTime.now(),
       );
-      final issue2 = Issue(
-        id: 2345,
-        createdAt: DateTime.now(),
-      );
-      final pullRequest = PullRequest(
-        createdAt: DateTime.now(),
-        title: 'PR Test Title',
-        id: 000,
-      );
-      final events = [TimelineEvent(createdAt: DateTime.now())];
+      final user2 = User(login: 'testlogin', avatarUrl: 'avatarUrl');
+      final issue2 = Issue(id: 2345, createdAt: DateTime.now(), user: user2);
+      final events = [
+        CommentEvent(
+          createdAt: DateTime.now(),
+          actor: user2,
+          body: 'longbody',
+        )
+      ];
 
       await ref.addData(IssueTestType(), issue, issue);
       await ref.addData(IssueTestType(), issue2, issue2);
-      await ref.addData(PullRequestTestType(), pullRequest, pullRequest);
       await ref.addData(TimelineType(IssueTestType()), issue, events);
     },
     skip: true,
@@ -97,15 +96,40 @@ void main() {
     'save PR',
     () async {
       final repositorySlug = RepositorySlug('mosuem', 'dart_triage_updater');
+      final user2 = User(avatarUrl: 'someUrl', login: 'somelogin');
       final pullRequest = PullRequest(
         id: 99999,
         number: 3,
+        user: user2,
+        labels: [
+          IssueLabel(
+            name: 'testname',
+            description: 'verylongdesc',
+          )
+        ],
+        base: PullRequestHead(
+            user: user2,
+            repo: Repository(
+              name: 'test',
+              url: 'testurl',
+              owner: UserInformation('login', 1234, 'avatarUrl', 'htmlUrl'),
+            )),
+        head: PullRequestHead(user: user2),
       );
       await TriageUpdater(getGithub())
           .savePullRequest(repositorySlug, PullRequestTestType(), pullRequest);
     },
-    skip: true,
+    // skip: true,
   );
+
+  test('get PR', () async {
+    final map = await DatabaseReference().getData(PullRequestTestType(), 99999);
+    expect(map!.reviewers, isNotEmpty);
+  });
+  test('get Issues', () async {
+    final map = await DatabaseReference().getData(IssueTestType(), 2345);
+    expect(map!.user, isNotNull);
+  });
   test(
     'save issues',
     () async {

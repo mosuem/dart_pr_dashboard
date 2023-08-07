@@ -170,8 +170,13 @@ class DatabaseReference {
     final uri = Uri.parse('${firebaseUrl}last_updated.json');
     final response =
         await sendRequest((url, _) async => await http.get(url), uri);
-    final map = (jsonDecode(response.body) ?? <String, dynamic>{})
-        as Map<String, dynamic>;
+    Map<String, dynamic> map;
+    if (response != null) {
+      map = (jsonDecode(response.body) ?? <String, dynamic>{})
+          as Map<String, dynamic>;
+    } else {
+      map = {};
+    }
     return map.map((key, value) => MapEntry(
         RepositorySlugExtension.fromUrl(key),
         DateTime.fromMillisecondsSinceEpoch(value)));
@@ -182,31 +187,43 @@ class DatabaseReference {
     final uri = Uri.parse('$firebaseUrl${type.url}/$id.json');
     final response =
         await sendRequest((url, _) async => await http.get(url), uri);
-    final list = (jsonDecode(response.body) ?? []) as List;
+    List list;
+    if (response != null) {
+      list = (jsonDecode(response.body) ?? []) as List;
+    } else {
+      list = [];
+    }
     return list.map((e) => TimelineEvent.fromJson(e)).toList();
   }
 
-  Future<http.Response> sendRequest(
+  Future<http.Response?> sendRequest(
     Future<http.Response> Function(Uri, Object?) request,
     Uri uri, [
     String? data,
   ]) async {
-    http.Response response;
-    if (authRequest != null) {
-      if (authResponse == null || authResponse!.willExpireSoon) {
-        await signIn();
+    try {
+      http.Response response;
+      if (authRequest != null) {
+        if (authResponse == null || authResponse!.willExpireSoon) {
+          await signIn();
+        }
+        final uriWithAuth = uri.replace(queryParameters: {
+          ...uri.queryParameters,
+          'auth': authResponse!.idToken
+        });
+        response = await request(uriWithAuth, data);
+      } else {
+        response = await request(uri, data);
       }
-      final uriWithAuth =
-          uri.replace(queryParameters: {'auth': authResponse!.idToken});
-      response = await request(uriWithAuth, data);
-    } else {
-      response = await request(uri, data);
-    }
 
-    if (response.statusCode != 200) {
-      throw Exception('Error ${response.statusCode} - ${response.body}');
+      if (response.statusCode > 299) {
+        throw Exception('Error ${response.statusCode} - ${response.body}');
+      }
+      return response;
+    } catch (e) {
+      print('Exception occured: $e');
     }
-    return response;
+    return null;
   }
 
   static List<T> extractDataFrom<S, T>(
@@ -235,10 +252,63 @@ class DatabaseReference {
       'startAt': from.millisecondsSinceEpoch,
       'endAt': to.millisecondsSinceEpoch,
     });
+    // ignore: unused_local_variable
     final response =
         await sendRequest((p0, _) async => await http.get(uri), uri);
-    print(response.body);
     return list;
+  }
+
+  Future<List<int>?> getIds(UpdateType type, [String? path]) async {
+    final andPath = path != null ? '/$path' : '';
+    final uri = Uri.parse('$firebaseUrl${type.url}$andPath.json')
+        .replace(queryParameters: {'shallow': 'true'});
+    final response =
+        await sendRequest((p0, _) async => await http.get(uri), uri);
+    Map<String, dynamic> map;
+    if (response != null) {
+      map = (jsonDecode(response.body) ?? <String, dynamic>{})
+          as Map<String, dynamic>;
+    } else {
+      map = {};
+    }
+    return map.keys.map((e) => int.parse(e)).toList();
+  }
+
+  Future<void> deleteData(UpdateType type, int id, String field) async {
+    final uri =
+        Uri.parse('$firebaseUrl${type.url}/${id.toString()}/$field.json')
+            .replace(queryParameters: {'print': 'silent'});
+    await sendRequest((p0, _) async => await http.delete(uri), uri);
+  }
+
+  Future<String?> getField(UpdateType type, int id, String field) async {
+    final uri =
+        Uri.parse('$firebaseUrl${type.url}/${id.toString()}/$field.json')
+            .replace(queryParameters: {'shallow': 'true'});
+    final response =
+        await sendRequest((p0, _) async => await http.get(uri), uri);
+    return response != null ? jsonDecode(response.body) : null;
+  }
+
+  Future<T?> getData<S, T>(UpdateType<S, T> type, int id) async {
+    final uri = Uri.parse('$firebaseUrl${type.url}/${id.toString()}.json');
+    final response =
+        await sendRequest((p0, _) async => await http.get(uri), uri);
+    final decoded = response != null ? jsonDecode(response.body) : null;
+    return decoded != null ? type.decode(decoded) : null;
+  }
+
+  Future<void> patchData(
+      UpdateType type, int id, String field, Object newValue) async {
+    final jsonEncode2 = jsonEncode({field: newValue});
+    await patchAll(type, id, jsonEncode2);
+  }
+
+  Future<void> patchAll<S, T>(UpdateType<S, T> type, int id, String d) async {
+    final uri = Uri.parse('$firebaseUrl${type.url}/${id.toString()}.json')
+        .replace(queryParameters: {'print': 'silent'});
+    await sendRequest(
+        (p0, data) async => await http.patch(uri, body: data), uri, d);
   }
 }
 
