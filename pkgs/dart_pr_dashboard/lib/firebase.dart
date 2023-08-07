@@ -41,7 +41,7 @@ Stream<List<PullRequest>> streamPullRequestsFromFirebase() {
   return FirebaseDatabase.instance
       .ref()
       .child('pullrequests/data/')
-      .orderByChild('pr/state')
+      .orderByChild('state')
       .equalTo('open')
       .onValue
       .map((event) => event.snapshot)

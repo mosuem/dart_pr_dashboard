@@ -185,9 +185,12 @@ List _encodeTimeline(List<TimelineEvent> timelineEvent) {
   }).toList();
 }
 
-void reduceUser(Map<String, dynamic> map, String key) {
-  if (map[key]?['login'] != null) {
-    map[key] = {'login': map[key]!['login']};
+void reduceUser(Map<String, dynamic> map, String key) =>
+    reduce(map, key, 'login');
+
+void reduce(Map<String, dynamic> map, String key, String field) {
+  if (map[key]?[field] != null) {
+    map[key] = {field: map[key]![field]};
   }
 }
 

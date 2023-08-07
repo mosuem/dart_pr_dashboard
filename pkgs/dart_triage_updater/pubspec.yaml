@@ -10,7 +10,10 @@ environment:
 dependencies:
   args: ^2.4.2
   collection: ^1.18.0
-  github: ^9.15.1
+  github:
+    git:
+      url: git@github.com:mosuem/github.dart.git
+      ref: addGhost
   http: ^1.1.0
 
 dev_dependencies:
