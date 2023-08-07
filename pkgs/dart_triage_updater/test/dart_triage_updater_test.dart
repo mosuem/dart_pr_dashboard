@@ -123,11 +123,13 @@ void main() {
   );
 
   test('get PR', () async {
-    final map = await DatabaseReference().getData(PullRequestTestType(), 99999);
+    final map = await DatabaseReference()
+        .getData(PullRequestTestType(), 99999.toString());
     expect(map!.reviewers, isNotEmpty);
   });
   test('get Issues', () async {
-    final map = await DatabaseReference().getData(IssueTestType(), 2345);
+    final map =
+        await DatabaseReference().getData(IssueTestType(), 2345.toString());
     expect(map!.user, isNotNull);
   });
   test(

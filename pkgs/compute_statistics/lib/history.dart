@@ -1,19 +1,15 @@
 import 'package:collection/collection.dart';
+import 'package:dart_triage_updater/update_type.dart';
 import 'package:github/github.dart';
 
-class Diff<T> {
+class History<T> {
   final T object;
+  final UpdateType<T, T> type;
   final List<TimelineEvent> events;
-  final DateTime createdAt;
 
-  Diff._(this.object, List<TimelineEvent> events, this.createdAt)
+  History(this.type, this.object, List<TimelineEvent> events)
       : events = events.sortedBy((event) =>
             event.createdAt ?? DateTime.fromMillisecondsSinceEpoch(0));
-
-  static fromIssue(Issue issue, List<TimelineEvent> events) =>
-      Diff._(issue, events, issue.createdAt!);
-  static fromPullRequest(PullRequest pr, List<TimelineEvent> events) =>
-      Diff._(pr, events, pr.createdAt!);
 
   /// LABELING
   Iterable<LabelEvent> get _labelEvents => events.whereType<LabelEvent>();
@@ -52,7 +48,6 @@ class Diff<T> {
   Duration? get timeToComment => _timeTo(_commentEvents);
 
   Duration? _timeTo<S extends TimelineEvent>(Iterable<S> eventList) {
-    final dateTime = eventList.firstOrNull?.createdAt!;
-    return dateTime != null ? createdAt.difference(dateTime) : null;
+    return eventList.firstOrNull?.createdAt?.difference(type.createdAt(object));
   }
 }

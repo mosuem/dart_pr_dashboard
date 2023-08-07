@@ -1,3 +1,4 @@
+import 'package:dart_triage_updater/issue_utils.dart';
 import 'package:flutter/material.dart';
 import 'package:github/github.dart';
 import 'package:intl4x/intl4x.dart';
@@ -5,7 +6,6 @@ import 'package:intl4x/number_format.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:vtable/vtable.dart';
 
-import '../issue_utils.dart';
 import 'misc.dart';
 import 'theme.dart';
 import 'widgets.dart';
@@ -132,7 +132,7 @@ class _IssueTableState extends State<IssueTable> {
           width: 80,
           grow: 0.4,
           alignment: Alignment.topLeft,
-          transformFunction: (issue) => issue.repoSlug ?? '',
+          transformFunction: (issue) => issue.repoSlug?.fullName ?? '',
         ),
         VTableColumn(
           label: 'Age (days)',
@@ -232,6 +232,36 @@ class _IssueTableState extends State<IssueTable> {
     }
 
     return result.toList();
+  }
+}
+
+extension on Issue {
+  bool matchesFilter(String filter) {
+    // title
+    if (title.toLowerCase().contains(filter)) return true;
+
+    // repo
+    final slug = repoSlug;
+    if (slug != null && slug.fullName.contains(filter)) return true;
+
+    // author
+    final login = user?.login?.toLowerCase();
+    if (login != null && login.contains(filter)) return true;
+
+    // assignees
+    if (assignees != null) {
+      for (final assignee in assignees!) {
+        final login = assignee.login?.toLowerCase();
+        if (login != null && login.contains(filter)) return true;
+      }
+    }
+
+    // labels
+    for (final label in labels) {
+      if (label.name.toLowerCase().contains(filter)) return true;
+    }
+
+    return false;
   }
 }
 

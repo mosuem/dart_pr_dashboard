@@ -11,7 +11,10 @@ environment:
 dependencies:
   dart_triage_updater:
     path: ../dart_triage_updater
-  github: ^9.17.0
+  github:
+    git:
+      url: git@github.com:mosuem/github.dart.git
+      ref: addGhost
   collection: ^1.18.0
 
 dev_dependencies:

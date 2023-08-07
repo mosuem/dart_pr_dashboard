@@ -1,14 +1,5 @@
 import 'package:github/github.dart';
 
-String? getMatch(Issue issue, String columnName, List<User> googlers) {
-  switch (columnName) {
-    case 'title':
-      return issue.title;
-    default:
-      return null;
-  }
-}
-
 extension IssueUtils on Issue {
   int get upvotes {
     return (reactions?.heart ?? 0) +
@@ -17,4 +8,15 @@ extension IssueUtils on Issue {
   }
 
   bool authorIsGoogler(Set<String> googlers) => googlers.contains(user?.login);
+
+  RepositorySlug? get repoSlug {
+    final url = repositoryUrl;
+    if (url == null) return null;
+
+    const marker = '/repos/';
+    final index = url.indexOf(marker);
+    return index == -1
+        ? null
+        : RepositorySlug.full(url.substring(index + marker.length));
+  }
 }
