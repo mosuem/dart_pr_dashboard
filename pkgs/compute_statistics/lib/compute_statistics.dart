@@ -1,10 +1,11 @@
 import 'package:collection/collection.dart';
-import 'history.dart';
-import 'statistics.dart';
 import 'package:dart_triage_updater/firebase_database.dart';
 import 'package:dart_triage_updater/issue_utils.dart';
 import 'package:dart_triage_updater/update_type.dart';
 import 'package:github/github.dart';
+
+import 'history.dart';
+import 'statistics.dart';
 
 class ComputeStatistics {
   var ref = DatabaseReference();
