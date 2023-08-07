@@ -19,6 +19,8 @@ defaults:
   run:
     working-directory: pkgs/dart_triage_updater/
 
+permissions: read-all
+
 jobs:
   build:
     runs-on: ubuntu-latest
