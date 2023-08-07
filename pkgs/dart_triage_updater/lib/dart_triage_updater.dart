@@ -54,7 +54,7 @@ class TriageUpdater {
     dartLangRepos
         .sortBy<num>((slug) => lastUpdated[slug]?.millisecondsSinceEpoch ?? 0);
 
-    final repos = [...dartLangRepos, ...includeRepos];
+    final repos = {...dartLangRepos, ...includeRepos}.toList();
     for (var i = 0; i < repos.length; i++) {
       final slug = repos[i];
       try {
