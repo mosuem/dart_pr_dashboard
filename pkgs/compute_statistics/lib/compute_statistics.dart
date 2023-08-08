@@ -14,6 +14,7 @@ class ComputeStatistics {
   ComputeStatistics(this.referenceDate);
 
   Future<Statistics> compute() async {
+    print('Start computing');
     final createdAtMonth = await getCreatedAtMonth(referenceDate, IssueType());
     print(
         'createdAtMonth: ${createdAtMonth.map((key, value) => MapEntry(key, value.length))}');
@@ -35,7 +36,7 @@ class ComputeStatistics {
       updateFrequencyPerMonthAndPriority: {}, //TODO: think about what we want here
       repositoriesWithMostUntriaged: getUntriagedRepositories(openIssues),
     );
-    print(statistics.toReport());
+    print('Done computing');
     return statistics;
   }
 
