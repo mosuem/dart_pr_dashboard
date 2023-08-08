@@ -7,15 +7,12 @@ publish_to: 'none'
 environment:
   sdk: ^3.0.0
 
-# Add regular dependencies here.
 dependencies:
   dart_triage_updater:
     path: ../dart_triage_updater
-  github:
-    git:
-      url: git@github.com:mosuem/github.dart.git
-      ref: addGhost
+  github: ^9.17.0
   collection: ^1.18.0
+  args: ^2.4.2
 
 dev_dependencies:
   lints: ^2.0.0

@@ -139,11 +139,11 @@ class DatabaseReference {
     }
   }
 
-  Future<void> addData<S, T>(UpdateType<S, T> type, S element, T data) async {
+  Future<void> addData<S, T>(UpdateType<S, T> type, S keyBearer, T data) async {
     await sendRequest(
       (uri, d) async => await http.patch(uri, body: d),
       Uri.parse('$firebaseUrl${type.url}.json'),
-      jsonEncode({type.key(element): type.encode(data)}),
+      jsonEncode({type.key(keyBearer): type.encode(data)}),
     );
   }
 

@@ -1,5 +1,4 @@
-import 'dart:convert';
-
+import 'package:dart_triage_updater/firebase_database.dart';
 import 'package:dart_triage_updater/issue_utils.dart';
 import 'package:github/github.dart';
 
@@ -7,6 +6,7 @@ typedef Month = int;
 typedef Priority = int;
 
 class Statistics {
+  final DateTime timeStamp;
   final Map<Month, Duration> timeToLabelPerMonth;
   final Map<Month, (int unlabeled, int total)> unlabeledIssuesPerMonth;
   final List<Issue> p0Issues;
@@ -20,6 +20,7 @@ class Statistics {
       repositoriesWithMostUntriaged;
 
   Statistics({
+    required this.timeStamp,
     required this.timeToLabelPerMonth,
     required this.unlabeledIssuesPerMonth,
     required this.p0Issues,
@@ -32,8 +33,9 @@ class Statistics {
     required this.repositoriesWithMostUntriaged,
   });
 
-  Map<String, dynamic> toMap() {
+  Map<String, dynamic> toJson() {
     return {
+      'timeStamp': timeStamp.millisecondsSinceEpoch,
       'timeToLabelPerMonth': timeToLabelPerMonth.map((key, value) => MapEntry(
             key.toString(),
             value.inMilliseconds,
@@ -55,12 +57,13 @@ class Statistics {
                     )),
               )),
       'repositoriesWithMostUntriaged': repositoriesWithMostUntriaged
-          .map((key, value) => MapEntry(key.fullName, [value.$1, value.$2])),
+          .map((key, value) => MapEntry(key.toUrl(), [value.$1, value.$2])),
     };
   }
 
-  factory Statistics.fromMap(Map<String, dynamic> map) {
+  factory Statistics.fromJson(Map<String, dynamic> map) {
     return Statistics(
+      timeStamp: DateTime.fromMillisecondsSinceEpoch(map['timeStamp']),
       timeToLabelPerMonth: toMonthDurationMap(map['timeToLabelPerMonth']),
       unlabeledIssuesPerMonth:
           (map['unlabeledIssuesPerMonth'] as Map<String, dynamic>).map(
@@ -84,19 +87,14 @@ class Statistics {
                   MapEntry(int.parse(key), toMonthDurationMap(value))),
       repositoriesWithMostUntriaged: (map['repositoriesWithMostUntriaged']
               as Map<String, dynamic>)
-          .map((key, value) =>
-              MapEntry(RepositorySlug.full(key), (value.first, value.last))),
+          .map((key, value) => MapEntry(
+              RepositorySlugExtension.fromUrl(key), (value.first, value.last))),
     );
   }
 
   static Map<Month, Duration> toMonthDurationMap(Map<String, dynamic> map) =>
       map.map((key, value) =>
           MapEntry(int.parse(key), Duration(milliseconds: value)));
-
-  String toJson() => json.encode(toMap());
-
-  factory Statistics.fromJson(String source) =>
-      Statistics.fromMap(json.decode(source));
 
   //TODO: Make this a markdown
   String toReport() {

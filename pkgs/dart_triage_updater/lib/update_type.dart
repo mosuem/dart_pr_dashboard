@@ -3,7 +3,7 @@ import 'dart:convert';
 import 'package:dart_triage_updater/pull_request_utils.dart';
 import 'package:github/github.dart';
 
-sealed class UpdateType<S, T> {
+abstract class UpdateType<S, T> {
   const UpdateType();
 
   Object encode(T data);

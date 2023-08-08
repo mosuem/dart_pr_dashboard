@@ -7,10 +7,11 @@ linter:
   rules:
     # Uncomment to disable the `avoid_print` rule
     # avoid_print: false
-    directives_ordering: true
-    omit_local_variable_types: true
-    prefer_final_in_for_each: true
-    prefer_final_locals: true
-    prefer_relative_imports: true
-    prefer_single_quotes: true
-    unnecessary_parenthesis: true
+    - directives_ordering
+    - omit_local_variable_types
+    - prefer_final_in_for_each
+    - prefer_final_locals
+    - prefer_relative_imports
+    - prefer_single_quotes
+    - unnecessary_parenthesis 
+    - prefer_final_fields

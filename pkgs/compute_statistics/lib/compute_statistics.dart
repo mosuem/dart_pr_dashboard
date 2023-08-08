@@ -8,7 +8,7 @@ import 'history.dart';
 import 'statistics.dart';
 
 class ComputeStatistics {
-  var ref = DatabaseReference();
+  final ref = DatabaseReference();
   final DateTime referenceDate;
 
   ComputeStatistics(this.referenceDate);
@@ -23,6 +23,7 @@ class ComputeStatistics {
     print('openPullRequests: ${openPullRequests.length}');
 
     final statistics = Statistics(
+      timeStamp: referenceDate,
       timeToLabelPerMonth: getTimeToLabel(createdAtMonth),
       unlabeledIssuesPerMonth: getUnlabeled(createdAtMonth),
       p0Issues: getPIssues(0, openIssues),
@@ -40,7 +41,7 @@ class ComputeStatistics {
 
   List<Issue> getUpvotedIssues(List<Issue> issues) {
     return issues
-        .sortedBy<num>((element) => element.upvotes)
+        .sortedBy<num>((issue) => issue.upvotes)
         .reversed
         .take(5)
         .toList();
@@ -87,7 +88,7 @@ class ComputeStatistics {
     UpdateType<T, T> type,
   ) async {
     final diffs = <int, List<History<T>>>{};
-    for (var i = 0; i < 2; i++) {
+    for (var i = 0; i < 12; i++) {
       final from = getFrom(i);
       final to = getTo(i);
       final issues = await ref.getAllWith(
@@ -129,38 +130,39 @@ class ComputeStatistics {
         .toList();
   }
 
-  List<PullRequest> getPPullRequests(int i, List<PullRequest> openIssues) {
-    return openIssues
-        .where((pr) => (pr.labels ?? []).any((label) => isPLabel(i, label)))
+  List<PullRequest> getPPullRequests(int priority, List<PullRequest> openPRs) {
+    return openPRs
+        .where((pr) =>
+            pr.labels?.any((label) => isPLabel(priority, label)) ?? false)
         .toList();
   }
 
   Future<List<T>> getOpen<S, T>(UpdateType<S, T> type) async =>
       await ref.getAllWith(type, orderBy: 'state', equalTo: 'open');
 
-  bool isPLabel(int i, IssueLabel label) {
+  bool isPLabel(int priority, IssueLabel label) {
     //TODO: Account for different types of priority labels
-    return label.name == 'P$i';
+    return label.name == 'P$priority';
   }
 
   Map<RepositorySlug, (int, int)> getUntriagedRepositories(
       List<Issue> openIssues) {
-    final map = <RepositorySlug, (int, int)>{};
+    final untriagedPerRepo = <RepositorySlug, (int, int)>{};
     for (final issue in openIssues) {
       final slug = issue.repoSlug!;
-      map.putIfAbsent(slug, () => (0, 0));
+      untriagedPerRepo.putIfAbsent(slug, () => (0, 0));
       // TODO: Refine this to avoid auto-labels such as `pkg:something`
       final isUntriaged = issue.labels.isEmpty;
       if (isUntriaged) {
-        map.update(slug, (value) => (value.$1 + 1, value.$2 + 1));
+        untriagedPerRepo.update(slug, (value) => (value.$1 + 1, value.$2 + 1));
       } else {
-        map.update(slug, (value) => (value.$1, value.$2 + 1));
+        untriagedPerRepo.update(slug, (value) => (value.$1, value.$2 + 1));
       }
     }
-    final onlyTop = map.entries
+    final onlyTop = untriagedPerRepo.entries
         .sortedBy<num>((repoEntry) => repoEntry.value.$2)
         .reversed
-        .take(map.length ~/ 2)
+        .take(untriagedPerRepo.length ~/ 2)
         .sortedBy<num>((repoEntry) => repoEntry.value.$1 / repoEntry.value.$2)
         .reversed
         .take(5);
