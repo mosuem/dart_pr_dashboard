@@ -27,11 +27,11 @@ class ComputeStatistics {
       timeStamp: referenceDate,
       timeToLabelPerMonth: getTimeToLabel(createdAtMonth),
       unlabeledIssuesPerMonth: getUnlabeled(createdAtMonth),
-      p0Issues: getPIssues(0, openIssues),
-      p1Issues: getPIssues(1, openIssues),
-      importantP2Issues: getUpvotedIssues(getPIssues(2, openIssues)),
-      p0PullRequests: getPPullRequests(0, openPullRequests),
-      p1PullRequests: getPPullRequests(1, openPullRequests),
+      p0Issues: getPriorityIssues(0, openIssues),
+      p1Issues: getPriorityIssues(1, openIssues),
+      importantP2Issues: getUpvotedIssues(getPriorityIssues(2, openIssues)),
+      p0PullRequests: getPriorityPullRequests(0, openPullRequests),
+      p1PullRequests: getPriorityPullRequests(1, openPullRequests),
       topVotedIssues: getUpvotedIssues(openIssues),
       updateFrequencyPerMonthAndPriority: {}, //TODO: think about what we want here
       repositoriesWithMostUntriaged: getUntriagedRepositories(openIssues),
@@ -125,23 +125,28 @@ class ComputeStatistics {
   DateTime getTo(int i) =>
       DateTime(referenceDate.year, referenceDate.month - i + 1);
 
-  List<Issue> getPIssues(int i, List<Issue> openIssues) {
+  List<Issue> getPriorityIssues(int priority, List<Issue> openIssues) {
     return openIssues
-        .where((issue) => issue.labels.any((label) => isPLabel(i, label)))
+        .where((issue) =>
+            issue.labels.any((label) => isPriorityLabel(priority, label)))
         .toList();
   }
 
-  List<PullRequest> getPPullRequests(int priority, List<PullRequest> openPRs) {
+  List<PullRequest> getPriorityPullRequests(
+    int priority,
+    List<PullRequest> openPRs,
+  ) {
     return openPRs
         .where((pr) =>
-            pr.labels?.any((label) => isPLabel(priority, label)) ?? false)
+            pr.labels?.any((label) => isPriorityLabel(priority, label)) ??
+            false)
         .toList();
   }
 
   Future<List<T>> getOpen<S, T>(UpdateType<S, T> type) async =>
       await ref.getAllWith(type, orderBy: 'state', equalTo: 'open');
 
-  bool isPLabel(int priority, IssueLabel label) {
+  bool isPriorityLabel(int priority, IssueLabel label) {
     //TODO: Account for different types of priority labels
     return label.name == 'P$priority';
   }
