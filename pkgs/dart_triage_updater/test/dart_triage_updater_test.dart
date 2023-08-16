@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:collection/collection.dart';
 import 'package:dart_triage_updater/dart_triage_updater.dart';
 import 'package:dart_triage_updater/pull_request_utils.dart';
 import 'package:dart_triage_updater/firebase_database.dart';
@@ -60,6 +61,21 @@ void main() {
     skip: true,
   );
 
+  test('Sorting repos', () {
+    final list = [
+      RepositorySlug('mosuem', 'dart_pr_dashboard'),
+      RepositorySlug('mosuem', 'dart_triage_updater'),
+    ];
+
+    final lastUpdated = {
+      RepositorySlug('mosuem', 'dart_pr_dashboard'): DateTime.now()
+    };
+    final sortedList = List.from(list);
+    sortedList
+        .sortBy<num>((slug) => lastUpdated[slug]?.millisecondsSinceEpoch ?? 0);
+    expect(sortedList, orderedEquals(list.reversed.toList()));
+  });
+
   test(
     'set and get last updated',
     () async {
@@ -107,11 +123,13 @@ void main() {
   );
 
   test('get PR', () async {
-    final map = await DatabaseReference().getData(PullRequestTestType(), 99999);
+    final map = await DatabaseReference()
+        .getData(PullRequestTestType(), 99999.toString());
     expect(map!.reviewers, isNotEmpty);
   });
   test('get Issues', () async {
-    final map = await DatabaseReference().getData(IssueTestType(), 2345);
+    final map =
+        await DatabaseReference().getData(IssueTestType(), 2345.toString());
     expect(map!.user, isNotNull);
   });
   test(

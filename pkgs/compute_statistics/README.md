@@ -1,0 +1,1 @@
+Compute statistics on issues and PRs.

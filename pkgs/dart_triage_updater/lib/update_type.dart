@@ -3,7 +3,7 @@ import 'dart:convert';
 import 'package:dart_triage_updater/pull_request_utils.dart';
 import 'package:github/github.dart';
 
-sealed class UpdateType<S, T> {
+abstract class UpdateType<S, T> {
   const UpdateType();
 
   Object encode(T data);
@@ -11,6 +11,8 @@ sealed class UpdateType<S, T> {
   String get url;
   String get name;
   String key(S data);
+
+  DateTime createdAt(S data);
 }
 
 final class IssueType extends UpdateType<Issue, Issue> {
@@ -30,6 +32,9 @@ final class IssueType extends UpdateType<Issue, Issue> {
 
   @override
   String key(Issue data) => data.id.toString();
+
+  @override
+  DateTime createdAt(Issue data) => data.createdAt!;
 }
 
 final class PullRequestType extends UpdateType<PullRequest, PullRequest> {
@@ -50,6 +55,9 @@ final class PullRequestType extends UpdateType<PullRequest, PullRequest> {
 
   @override
   String key(PullRequest data) => data.id.toString();
+
+  @override
+  DateTime createdAt(PullRequest data) => data.createdAt!;
 }
 
 final class TimelineType<S, T> extends UpdateType<S, List<TimelineEvent>> {
@@ -74,6 +82,9 @@ final class TimelineType<S, T> extends UpdateType<S, List<TimelineEvent>> {
 
   @override
   String key(S data) => parent.key(data);
+
+  @override
+  DateTime createdAt(S data) => parent.createdAt(data);
 }
 
 final class IssueTestType extends IssueType {
@@ -90,9 +101,6 @@ final class IssueTestType extends IssueType {
 
   @override
   String get url => '$name/data';
-
-  @override
-  String key(Issue data) => data.id.toString();
 }
 
 final class PullRequestTestType extends PullRequestType {
@@ -110,9 +118,6 @@ final class PullRequestTestType extends PullRequestType {
 
   @override
   String get url => '$name/data';
-
-  @override
-  String key(PullRequest data) => data.id.toString();
 }
 
 Map<String, dynamic> _encodePR(PullRequest pr) {

@@ -1,0 +1,35 @@
+# This workflow uses actions that are not certified by GitHub.
+# They are provided by a third-party and are governed by
+# separate terms of service, privacy policy, and support
+# documentation.
+
+name: Update database
+
+on:
+  push:
+    paths:
+      - pkgs/compute_statistics/**
+    branches:
+      - main
+  schedule:
+    - cron: '0 0 * * *' # Once a daily, at 00:00 UTC
+
+defaults:
+  run:
+    working-directory: pkgs/compute_statistics/
+
+permissions: read-all
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@c85c95e3d7251135ab7dc9ce3241c5835cc595a9
+      - uses: dart-lang/setup-dart@9a04e6d73cca37bd455e0608d7e5092f881fd603
+
+      - name: Install dependencies
+        run: dart pub get
+
+      - name: Update statistics
+        run: dart run bin/compute_statistics.dart --email=${{ secrets.FIREBASE_EMAIL }} --password=${{ secrets.FIREBASE_PASSWORD }}

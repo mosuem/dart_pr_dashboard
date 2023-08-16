@@ -139,11 +139,11 @@ class DatabaseReference {
     }
   }
 
-  Future<void> addData<S, T>(UpdateType<S, T> type, S element, T data) async {
+  Future<void> addData<S, T>(UpdateType<S, T> type, S keyBearer, T data) async {
     await sendRequest(
       (uri, d) async => await http.patch(uri, body: d),
       Uri.parse('$firebaseUrl${type.url}.json'),
-      jsonEncode({type.key(element): type.encode(data)}),
+      jsonEncode({type.key(keyBearer): type.encode(data)}),
     );
   }
 
@@ -180,19 +180,6 @@ class DatabaseReference {
     return map.map((key, value) => MapEntry(
         RepositorySlugExtension.fromUrl(key),
         DateTime.fromMillisecondsSinceEpoch(value)));
-  }
-
-  Future<List<TimelineEvent>> getTimeline(UpdateType type, int id) async {
-    final uri = Uri.parse('$firebaseUrl${type.name}/timeline/$id.json');
-    final response =
-        await sendRequest((url, _) async => await http.get(url), uri);
-    List list;
-    if (response != null) {
-      list = (jsonDecode(response.body) ?? []) as List;
-    } else {
-      list = [];
-    }
-    return list.map((e) => TimelineEvent.fromJson(e)).toList();
   }
 
   Future<http.Response?> sendRequest(
@@ -239,22 +226,25 @@ class DatabaseReference {
     return list;
   }
 
-  Future<List<T>> getCreatedBetween<S, T>({
-    required UpdateType<S, T> type,
-    required DateTime from,
-    required DateTime to,
+  Future<List<T>> getAllWith<S, T>(
+    UpdateType<S, T> type, {
+    required String orderBy,
+    String? equalTo,
+    String? startAt,
+    String? endAt,
   }) async {
-    final list = <T>[];
-    final uri =
-        Uri.parse('$firebaseUrl${type.url}.json').replace(queryParameters: {
-      'orderBy': 'createdAt',
-      'startAt': from.millisecondsSinceEpoch,
-      'endAt': to.millisecondsSinceEpoch,
+    final firebaseUri = Uri.parse('$firebaseUrl${type.url}.json');
+    final uri = firebaseUri.replace(queryParameters: {
+      'orderBy': jsonEncode(orderBy),
+      if (equalTo != null) 'equalTo': jsonEncode(equalTo),
+      if (startAt != null) 'startAt': startAt,
+      if (endAt != null) 'endAt': endAt,
     });
-    // ignore: unused_local_variable
     final response =
         await sendRequest((p0, _) async => await http.get(uri), uri);
-    return list;
+    if (response == null) return [];
+    final decoded = jsonDecode(response.body) as Map<String, dynamic>;
+    return decoded.values.map((e) => type.decode(e)).toList();
   }
 
   Future<List<int>?> getIds(UpdateType type, [String? path]) async {
@@ -289,8 +279,8 @@ class DatabaseReference {
     return response != null ? jsonDecode(response.body) : null;
   }
 
-  Future<T?> getData<S, T>(UpdateType<S, T> type, int id) async {
-    final uri = Uri.parse('$firebaseUrl${type.url}/${id.toString()}.json');
+  Future<T?> getData<S, T>(UpdateType<S, T> type, String id) async {
+    final uri = Uri.parse('$firebaseUrl${type.url}/$id.json');
     final response =
         await sendRequest((p0, _) async => await http.get(uri), uri);
     final decoded = response != null ? jsonDecode(response.body) : null;

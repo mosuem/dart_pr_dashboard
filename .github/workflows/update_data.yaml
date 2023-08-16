@@ -29,9 +29,6 @@ jobs:
       - uses: actions/checkout@c85c95e3d7251135ab7dc9ce3241c5835cc595a9
       - uses: dart-lang/setup-dart@9a04e6d73cca37bd455e0608d7e5092f881fd603
 
-      - name: Set SSH agent
-        run: eval `ssh-agent -s`;ssh-add - <<< '${{ secrets.PRIVATE_SSH_KEY }}'
-
       - name: Install dependencies
         run: dart pub get
 
