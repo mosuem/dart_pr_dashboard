@@ -1,0 +1,17 @@
+# Additional information about this file can be found at
+# https://dart.dev/guides/language/analysis-options
+
+include: package:lints/recommended.yaml
+
+linter:
+  rules:
+    # Uncomment to disable the `avoid_print` rule
+    # avoid_print: false
+    - directives_ordering
+    - omit_local_variable_types
+    - prefer_final_in_for_each
+    - prefer_final_locals
+    - prefer_relative_imports
+    - prefer_single_quotes
+    - unnecessary_parenthesis 
+    - prefer_final_fields

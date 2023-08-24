@@ -81,6 +81,7 @@ class _MyHomePageState extends State<MyHomePage>
     return Scaffold(
       appBar: AppBar(
         title: const Text('Dart Triage Dashboard'),
+        centerTitle: true,
         actions: [
           ValueListenableBuilder<bool>(
             valueListenable: widget.appModel.busy,
@@ -147,130 +148,135 @@ class _MyHomePageState extends State<MyHomePage>
       ),
       body: Padding(
         padding: const EdgeInsets.only(left: 16, right: 16, bottom: 8),
-        child: Column(
+        child: TabBarView(
+          controller: tabController,
           children: [
-            Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: TextField(
-                      decoration: const InputDecoration(
-                        icon: Icon(Icons.filter_list),
-                        hintText:
-                            r'author_association:^CONTRIBUTOR created_at:0-50 labels:^$',
-                        hintStyle: TextStyle(color: Colors.grey),
-                      ),
-                      controller: controller,
-                    ),
-                  ),
-                  Padding(
-                    padding: const EdgeInsets.all(8.0),
-                    child: TextButton(
-                      onPressed: () => controller.text = '',
-                      child: const Text('Clear'),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            Row(
+            Column(
               children: [
-                ConstrainedBox(
-                  constraints: const BoxConstraints(maxHeight: 32.0),
-                  child: ToggleButtons(
-                    borderRadius: BorderRadius.circular(6),
-                    textStyle: Theme.of(context).textTheme.titleMedium,
-                    isSelected: [
-                      ...filters.map(
-                          (filter) => controller.text.contains(filter.filter)),
-                    ],
-                    onPressed: (index) {
-                      final filter = filters[index];
-                      final text = filter.filter;
-                      if (controller.text.contains(text)) {
-                        controller.text = controller.text.replaceAll(text, '');
-                      } else {
-                        controller.text += ' $text';
-                      }
-                      controller.text = controller.text.trim();
-                    },
-                    children: [
-                      ...filters.map((filter) {
-                        return Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 10),
-                          child: Text(filter.name),
-                        );
-                      }),
-                    ],
-                  ),
+                Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  child: createFilterTextArea(),
                 ),
-                const Spacer(),
-                TextButton(
-                  onPressed: () async {
-                    final filterNameController = TextEditingController();
-
-                    final cancelButton = TextButton(
-                      child: const Text('Cancel'),
-                      onPressed: () => Navigator.pop(context, false),
-                    );
-
-                    final saveButton = TextButton(
-                      child: const Text('Save'),
-                      onPressed: () async {
-                        await saveFilter((
-                          name: filterNameController.text,
-                          filter: controller.text,
-                        ));
-                        // ignore: use_build_context_synchronously
-                        Navigator.pop(context, true);
-                      },
-                    );
-
-                    final dialog = await showDialog<bool>(
-                      context: context,
-                      builder: (BuildContext context) => AlertDialog(
-                        title: const Text('Save'),
-                        content: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            const Text('Save filter as '),
-                            TextField(controller: filterNameController)
-                          ],
-                        ),
-                        actions: [cancelButton, saveButton],
-                      ),
-                    );
-
-                    if (dialog ?? false) {
-                      final savedFilters = await loadFilters();
-                      setState(() {
-                        filters = [...presetFilters, ...savedFilters];
-                      });
-                    }
-                  },
-                  child: const Text('Save filter'),
+                createFilterButtonsArea(context),
+                Expanded(
+                  child: PullRequests(
+                    appModel: widget.appModel,
+                    filterStream: filterStream,
+                  ),
                 ),
               ],
             ),
-            Expanded(
-              child: TabBarView(
-                controller: tabController,
-                children: [
-                  PullRequests(
-                    appModel: widget.appModel,
-                    filterStream: filterStream,
-                  ),
-                  Issues(
-                    appModel: widget.appModel,
-                    filterStream: filterStream,
-                  ),
-                ],
-              ),
-            ),
+            Issues(appModel: widget.appModel),
           ],
         ),
       ),
+    );
+  }
+
+  Row createFilterButtonsArea(BuildContext context) {
+    return Row(
+      children: [
+        ConstrainedBox(
+          constraints: const BoxConstraints(maxHeight: 32.0),
+          child: ToggleButtons(
+            borderRadius: BorderRadius.circular(6),
+            textStyle: Theme.of(context).textTheme.titleMedium,
+            isSelected: [
+              ...filters
+                  .map((filter) => controller.text.contains(filter.filter)),
+            ],
+            onPressed: (index) {
+              final filter = filters[index];
+              final text = filter.filter;
+              if (controller.text.contains(text)) {
+                controller.text = controller.text.replaceAll(text, '');
+              } else {
+                controller.text += ' $text';
+              }
+              controller.text = controller.text.trim();
+            },
+            children: [
+              ...filters.map((filter) {
+                return Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 10),
+                  child: Text(filter.name),
+                );
+              }),
+            ],
+          ),
+        ),
+        const Spacer(),
+        TextButton(
+          onPressed: () async {
+            final filterNameController = TextEditingController();
+
+            final cancelButton = TextButton(
+              child: const Text('Cancel'),
+              onPressed: () => Navigator.pop(context, false),
+            );
+
+            final saveButton = TextButton(
+              child: const Text('Save'),
+              onPressed: () async {
+                await saveFilter((
+                  name: filterNameController.text,
+                  filter: controller.text,
+                ));
+                // ignore: use_build_context_synchronously
+                Navigator.pop(context, true);
+              },
+            );
+
+            final dialog = await showDialog<bool>(
+              context: context,
+              builder: (BuildContext context) => AlertDialog(
+                title: const Text('Save'),
+                content: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Text('Save filter as '),
+                    TextField(controller: filterNameController)
+                  ],
+                ),
+                actions: [cancelButton, saveButton],
+              ),
+            );
+
+            if (dialog ?? false) {
+              final savedFilters = await loadFilters();
+              setState(() {
+                filters = [...presetFilters, ...savedFilters];
+              });
+            }
+          },
+          child: const Text('Save filter'),
+        ),
+      ],
+    );
+  }
+
+  Row createFilterTextArea() {
+    return Row(
+      children: [
+        Expanded(
+          child: TextField(
+            decoration: const InputDecoration(
+              icon: Icon(Icons.filter_list),
+              hintText:
+                  r'author_association:^CONTRIBUTOR created_at:0-50 labels:^$',
+              hintStyle: TextStyle(color: Colors.grey),
+            ),
+            controller: controller,
+          ),
+        ),
+        Padding(
+          padding: const EdgeInsets.all(8.0),
+          child: TextButton(
+            onPressed: () => controller.text = '',
+            child: const Text('Clear'),
+          ),
+        ),
+      ],
     );
   }
 }
@@ -309,11 +315,9 @@ class Issues extends StatelessWidget {
   const Issues({
     super.key,
     required this.appModel,
-    required this.filterStream,
   });
 
   final AppModel appModel;
-  final ValueNotifier<SearchFilter?> filterStream;
 
   @override
   Widget build(BuildContext context) {
@@ -326,7 +330,6 @@ class Issues extends StatelessWidget {
             return IssueTable(
               issues: issues.map((e) => e.applied()!).toList(),
               googlers: googlers,
-              filterStream: filterStream,
             );
           },
         );

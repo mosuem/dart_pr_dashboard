@@ -1,8 +1,11 @@
-[![Flutter CI](https://github.com/mosuem/dart_pr_dashboard/actions/workflows/flutter.yml/badge.svg)](https://github.com/mosuem/dart_pr_dashboard/actions/workflows/flutter.yml)
+## Overview
 
-A dashboard to help with PR triage in dart-lang repositories.
+Containing the Dart Issue Dashboard and tools for updating its database.
 
-To update, run 
-```
-./tool/deploy.sh
-```
+## Packages
+
+| Package | Description | 
+| --- | --- | 
+| [dart_pr_dashboard](pkgs/dart_pr_dashboard/) | The firebase hosted dashboard. |
+| [dart_triage_updater](pkgs/dart_triage_updater/) | The database updater. |
+| [compute_statistics](pkgs/compute_statistics/) | Statistics calculation for the dashboard. |

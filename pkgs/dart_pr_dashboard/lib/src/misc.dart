@@ -27,3 +27,18 @@ int compareDates(DateTime? a, DateTime? b) {
 
 bool isLightColor(Color color) =>
     ThemeData.estimateBrightnessForColor(color) == Brightness.light;
+
+extension SetToggle<E> on Set<E> {
+  void toggle(E value) {
+    contains(value) ? remove(value) : add(value);
+  }
+
+  void toggleExclusive(E value) {
+    if (contains(value)) {
+      remove(value);
+    } else {
+      clear();
+      add(value);
+    }
+  }
+}

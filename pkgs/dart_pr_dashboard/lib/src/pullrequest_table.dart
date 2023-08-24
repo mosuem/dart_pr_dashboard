@@ -1,3 +1,4 @@
+import 'package:dart_triage_updater/pull_request_utils.dart';
 import 'package:flutter/material.dart';
 import 'package:github/github.dart';
 import 'package:intl4x/intl4x.dart';
@@ -5,7 +6,7 @@ import 'package:intl4x/number_format.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:vtable/vtable.dart';
 
-import '../pull_request_utils.dart';
+import '../pull_request_match.dart';
 import 'filter/filter.dart';
 import 'misc.dart';
 import 'widgets.dart';
@@ -109,7 +110,7 @@ class _PullRequestTableState extends State<PullRequestTable> {
               grow: 0.7,
               alignment: Alignment.topLeft,
               renderFunction: (context, pr, out) {
-                var reviewers = (pr.reviewers ?? [])
+                var reviewers = pr.reviewers
                     .map(
                         (reviewer) => formatUsername(reviewer, widget.googlers))
                     .join(', ');
