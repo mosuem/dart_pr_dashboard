@@ -1,4 +1,3 @@
-import 'package:dart_triage_updater/diff.dart';
 import 'package:flutter/material.dart';
 import 'package:github/github.dart';
 
@@ -98,30 +97,22 @@ class _MyHomePageState extends State<MyHomePage>
             },
           ),
           const SizedBox.square(dimension: 16),
-          ValueListenableBuilder<List<Diff<PullRequest>>>(
-              valueListenable: widget.appModel.pullrequests,
-              builder: (BuildContext context,
-                  List<Diff<PullRequest>> pullrequests, _) {
-                return ValueListenableBuilder<List<Diff<Issue>>>(
-                    valueListenable: widget.appModel.issues,
-                    builder:
-                        (BuildContext context, List<Diff<Issue>> issues, _) {
-                      return IconButton(
-                        icon: const Icon(Icons.report),
-                        onPressed: () async {
-                          Navigator.push<void>(
-                            context,
-                            MaterialPageRoute<void>(
-                              builder: (BuildContext context) => ReportPage(
-                                issueChanges: issues,
-                                pullrequestChanges: pullrequests,
-                              ),
-                            ),
-                          );
-                        },
-                      );
-                    });
-              }),
+          IconButton(
+            icon: const Icon(Icons.report),
+            onPressed: () async {
+              Navigator.push<void>(
+                context,
+                MaterialPageRoute<void>(
+                  builder: (BuildContext context) => ReportPage(
+                    issues: widget.appModel.issues,
+                    pullrequests: widget.appModel.pullrequests,
+                    statistics: widget.appModel.statistics,
+                    googlers: widget.appModel.googlers,
+                  ),
+                ),
+              );
+            },
+          ),
           const SizedBox.square(dimension: 16),
           ValueListenableBuilder<bool>(
             valueListenable: darkModeSwitch,
@@ -300,7 +291,7 @@ class PullRequests extends StatelessWidget {
           valueListenable: appModel.googlers,
           builder: (context, googlers, child) {
             return PullRequestTable(
-              pullRequests: pullrequests.map((e) => e.applied()!).toList(),
+              pullRequests: pullrequests,
               googlers: googlers,
               filterStream: filterStream,
             );
@@ -328,7 +319,7 @@ class Issues extends StatelessWidget {
           valueListenable: appModel.googlers,
           builder: (context, googlers, child) {
             return IssueTable(
-              issues: issues.map((e) => e.applied()!).toList(),
+              issues: issues,
               googlers: googlers,
             );
           },

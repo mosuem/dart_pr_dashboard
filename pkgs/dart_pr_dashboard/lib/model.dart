@@ -1,6 +1,6 @@
 import 'dart:async';
 
-import 'package:dart_triage_updater/diff.dart';
+import 'package:compute_statistics/statistics.dart';
 import 'package:flutter/foundation.dart';
 import 'package:github/github.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -21,7 +21,7 @@ class AppModel {
   ValueListenable<List<Issue>> get issues {
     if (_issues == null) {
       _issues = ValueNotifier([]);
-      streamIssuesFromFirebaseDebug().listen((event) {
+      streamIssuesFromFirebase().listen((event) {
         _strobeBusy();
         _issues!.value = event;
       });
@@ -34,13 +34,26 @@ class AppModel {
   ValueListenable<List<PullRequest>> get pullrequests {
     if (_pullrequests == null) {
       _pullrequests = ValueNotifier([]);
-      streamPullRequestsFromFirebaseDebug().listen((event) {
+      streamPullRequestsFromFirebase().listen((event) {
         _strobeBusy();
         _pullrequests!.value = event;
       });
     }
 
     return _pullrequests!;
+  }
+
+  ValueNotifier<Statistics?>? _statistics;
+  ValueListenable<Statistics?> get statistics {
+    if (_statistics == null) {
+      _statistics = ValueNotifier(null);
+      getCurrentStatistics().listen((event) {
+        _strobeBusy();
+        _statistics!.value = event;
+      });
+    }
+
+    return _statistics!;
   }
 
   final Completer<bool> _googlersAvailable = Completer<bool>();

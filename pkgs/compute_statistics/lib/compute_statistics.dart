@@ -146,11 +146,6 @@ class ComputeStatistics {
   Future<List<T>> getOpen<S, T>(UpdateType<S, T> type) async =>
       await ref.getAllWith(type, orderBy: 'state', equalTo: 'open');
 
-  bool isPriorityLabel(int priority, IssueLabel label) {
-    //TODO: Account for different types of priority labels
-    return label.name == 'P$priority';
-  }
-
   Map<RepositorySlug, (int, int)> getUntriagedRepositories(
       List<Issue> openIssues) {
     final untriagedPerRepo = <RepositorySlug, (int, int)>{};
@@ -174,4 +169,9 @@ class ComputeStatistics {
         .take(5);
     return Map.fromEntries(onlyTop);
   }
+}
+
+isPriorityLabel(int priority, IssueLabel label) {
+  //TODO: Account for different types of priority labels
+  return label.name == 'P$priority';
 }

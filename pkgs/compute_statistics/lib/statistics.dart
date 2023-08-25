@@ -64,32 +64,47 @@ class Statistics {
   factory Statistics.fromJson(Map<String, dynamic> map) {
     return Statistics(
       timeStamp: DateTime.fromMillisecondsSinceEpoch(map['timeStamp']),
-      timeToLabelPerMonth: toMonthDurationMap(map['timeToLabelPerMonth']),
-      unlabeledIssuesPerMonth:
-          (map['unlabeledIssuesPerMonth'] as Map<String, dynamic>).map(
-              (key, value) =>
-                  MapEntry(int.parse(key), (value.first, value.last))),
-      p0Issues:
-          List<Issue>.from(map['p0Issues']?.map((x) => Issue.fromJson(x))),
-      p1Issues:
-          List<Issue>.from(map['p1Issues']?.map((x) => Issue.fromJson(x))),
+      timeToLabelPerMonth: toMonthMap(
+        map['timeToLabelPerMonth'],
+        (data) => Duration(milliseconds: data as int),
+      ),
+      unlabeledIssuesPerMonth: toMonthMap(
+        map['unlabeledIssuesPerMonth'],
+        (data) => (data.first as int, data.last as int),
+      ),
+      p0Issues: List<Issue>.from(
+          map['p0Issues']?.map((x) => Issue.fromJson(x)) ?? []),
+      p1Issues: List<Issue>.from(
+          map['p1Issues']?.map((x) => Issue.fromJson(x)) ?? []),
       importantP2Issues: List<Issue>.from(
           map['importantP2Issues']?.map((x) => Issue.fromJson(x))),
       p0PullRequests: List<PullRequest>.from(
-          map['p0PullRequests']?.map((x) => PullRequest.fromJson(x))),
+          map['p0PullRequests']?.map((x) => PullRequest.fromJson(x)) ?? []),
       p1PullRequests: List<PullRequest>.from(
-          map['p1PullRequests']?.map((x) => PullRequest.fromJson(x))),
+          map['p1PullRequests']?.map((x) => PullRequest.fromJson(x)) ?? []),
       topVotedIssues: List<Issue>.from(
-          map['topVotedIssues']?.map((x) => Issue.fromJson(x))),
-      updateFrequencyPerMonthAndPriority:
-          (map['responseRatePerMonthAndPriority'] as Map<String, dynamic>).map(
-              (key, value) =>
-                  MapEntry(int.parse(key), toMonthDurationMap(value))),
+          map['topVotedIssues']?.map((x) => Issue.fromJson(x)) ?? []),
+      updateFrequencyPerMonthAndPriority: toMonthMap(
+        map['responseRatePerMonthAndPriority'] as List?,
+        (data) => toMonthDurationMap(data),
+      ),
       repositoriesWithMostUntriaged: (map['repositoriesWithMostUntriaged']
               as Map<String, dynamic>)
           .map((key, value) => MapEntry(
               RepositorySlugExtension.fromUrl(key), (value.first, value.last))),
     );
+  }
+
+  static Map<Month, T> toMonthMap<T>(
+      List? data, T Function(dynamic data) getter) {
+    return data == null
+        ? {}
+        : Map.fromEntries(
+            List.generate(
+              data.length,
+              (index) => MapEntry(index, getter(data[index])),
+            ),
+          );
   }
 
   static Map<Month, Duration> toMonthDurationMap(Map<String, dynamic> map) =>

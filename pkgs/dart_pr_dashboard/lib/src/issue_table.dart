@@ -16,11 +16,13 @@ class IssueTable extends StatefulWidget {
 
   final List<String> priorities = ['P0', 'P1', 'P2', 'P3', 'P4'];
   final List<String> types = ['type-bug', 'type-enhancement'];
+  final bool showActions;
 
   IssueTable({
     super.key,
     required this.issues,
     required this.googlers,
+    this.showActions = true,
   }) {
     // sort by age initially
     issues.sort((a, b) => compareDates(b.createdAt, a.createdAt));
@@ -113,7 +115,7 @@ class _IssueTableState extends State<IssueTable> {
     return VTable<Issue>(
       items: issues,
       tableDescription: '${_nf.format(issues.length)} issues',
-      actions: actions,
+      actions: widget.showActions ? actions : [],
       includeCopyToClipboardAction: true,
       onDoubleTap: (issue) => launchUrl(Uri.parse(issue.htmlUrl)),
       columns: [
