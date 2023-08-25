@@ -265,82 +265,10 @@ class ReportWidget extends StatelessWidget {
   Map<Month, T> sortReversed<T>(Map<Month, T> map) =>
       Map.fromEntries(map.entries.sortedBy<num>((e) => e.key).reversed);
 
-  Widget generateLineChart(String title, List<Map<int, int>> data) {
-    return Column(
-      children: [
-        Padding(
-          padding: const EdgeInsets.all(8.0),
-          child: Text(
-            title,
-            style: const TextStyle(fontSize: 25),
-          ),
-        ),
-        AspectRatio(
-          aspectRatio: 1.70,
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(18, 12, 24, 12),
-            child: LineChart(mainData(data)),
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget bottomTitleWidgets(double value, TitleMeta meta) {
-    const style = TextStyle(
-      fontWeight: FontWeight.bold,
-      fontSize: 16,
-    );
-    final monthValue = value.toInt();
-    final Widget text = Text(
-      Intl()
-          .datetimeFormat(const DateTimeFormatOptions(month: MonthStyle.short))
-          .format(
-              DateTime(DateTime.now().year, DateTime.now().month - monthValue)),
-      style: style,
-    );
-    return SideTitleWidget(
-      axisSide: meta.axisSide,
-      child: text,
-    );
-  }
-
-  Widget leftTitleWidgets(double value, TitleMeta meta) {
-    final style = TextStyle(
-      fontWeight: FontWeight.bold,
-      fontSize: 15,
-      color: issueColors.first,
-    );
-    final scaleValue = value.toInt();
-    final text = Intl().numberFormat().format(scaleValue);
-
-    return Text(text, style: style, textAlign: TextAlign.left);
-  }
-
-  Widget rightTitleWidgets(double value, TitleMeta meta) {
-    final style = TextStyle(
-      fontWeight: FontWeight.bold,
-      fontSize: 15,
-      color: pullrequestColors.first,
-    );
-    final scaleValue = value.toInt();
-    final text = Intl().numberFormat().format(scaleValue);
-
-    return Text(text, style: style, textAlign: TextAlign.right);
-  }
-
   BarChartData barData(
     Map<int, List<num>> data,
     String Function(num) formatter,
   ) {
-    // var maxValue = data.values.expand((element) => element).max;
-    // var numberDigits = (log(maxValue) / log(10)).ceilToDouble();
-    // double horizontalInterval;
-    // if (maxValue > (pow(10, numberDigits) / 4)) {
-    //   horizontalInterval = pow(10, numberDigits - 1).toDouble();
-    // } else {
-    //   horizontalInterval = pow(10, numberDigits - 2).toDouble();
-    // }
     return BarChartData(
       titlesData: FlTitlesData(
         leftTitles: const AxisTitles(),
@@ -358,7 +286,6 @@ class ReportWidget extends StatelessWidget {
       gridData: FlGridData(
         show: true,
         drawVerticalLine: true,
-        // horizontalInterval: horizontalInterval,
         getDrawingHorizontalLine: (value) =>
             const FlLine(color: Colors.transparent),
         getDrawingVerticalLine: (value) =>
@@ -409,6 +336,25 @@ class ReportWidget extends StatelessWidget {
     );
   }
 
+  Widget bottomTitleWidgets(double value, TitleMeta meta) {
+    const style = TextStyle(
+      fontWeight: FontWeight.bold,
+      fontSize: 16,
+    );
+    final monthValue = value.toInt();
+    final Widget text = Text(
+      Intl()
+          .datetimeFormat(const DateTimeFormatOptions(month: MonthStyle.short))
+          .format(
+              DateTime(DateTime.now().year, DateTime.now().month - monthValue)),
+      style: style,
+    );
+    return SideTitleWidget(
+      axisSide: meta.axisSide,
+      child: text,
+    );
+  }
+
   String formatDuration(Duration duration) {
     if (duration.inDays > 1) {
       return '${duration.inDays} d';
@@ -418,99 +364,5 @@ class ReportWidget extends StatelessWidget {
       return '${duration.inMinutes} min';
     }
     return '${duration.inSeconds} sec';
-  }
-
-  LineChartData mainData(List<Map<int, int>> values) {
-    return LineChartData(
-      gridData: FlGridData(
-        show: true,
-        drawVerticalLine: true,
-        horizontalInterval: 1,
-        verticalInterval: 1,
-        getDrawingHorizontalLine: (value) {
-          return const FlLine(
-            color: Colors.grey,
-            strokeWidth: 1,
-          );
-        },
-        getDrawingVerticalLine: (value) {
-          return const FlLine(
-            color: Colors.grey,
-            strokeWidth: 1,
-          );
-        },
-      ),
-      titlesData: FlTitlesData(
-        show: true,
-        rightTitles: AxisTitles(
-          sideTitles: SideTitles(
-            showTitles: true,
-            interval: 1,
-            getTitlesWidget: rightTitleWidgets,
-            reservedSize: 42,
-          ),
-        ),
-        topTitles: const AxisTitles(
-          sideTitles: SideTitles(showTitles: false),
-        ),
-        bottomTitles: AxisTitles(
-          sideTitles: SideTitles(
-            showTitles: true,
-            reservedSize: 30,
-            interval: 1,
-            getTitlesWidget: bottomTitleWidgets,
-          ),
-        ),
-        leftTitles: AxisTitles(
-          sideTitles: SideTitles(
-            showTitles: true,
-            interval: 1,
-            getTitlesWidget: leftTitleWidgets,
-            reservedSize: 42,
-          ),
-        ),
-      ),
-      borderData: FlBorderData(
-        show: true,
-        border: Border.all(color: const Color(0xff37434d)),
-      ),
-      minX: 1,
-      maxX: 12,
-      minY: 0,
-      maxY: values.fold(
-            0,
-            (previousValue, element) => max(previousValue, element.values.max),
-          ) *
-          1.1,
-      lineBarsData: values
-          .map((e) => LineChartBarData(
-                spots: dataToFlSpot(e),
-                isCurved: true,
-                gradient: LinearGradient(
-                  colors: issueColors,
-                ),
-                barWidth: 5,
-                isStrokeCapRound: true,
-                dotData: const FlDotData(
-                  show: false,
-                ),
-                belowBarData: BarAreaData(
-                  show: true,
-                  gradient: LinearGradient(
-                    colors: issueColors
-                        .map((color) => color.withOpacity(0.3))
-                        .toList(),
-                  ),
-                ),
-              ))
-          .toList(),
-    );
-  }
-
-  List<FlSpot> dataToFlSpot(Map<int, int> data) {
-    return data.entries
-        .sorted((a, b) => a.key.compareTo(b.key))
-        .map((e) => FlSpot(e.key.toDouble(), e.value.toDouble()))
-        .toList();
   }
 }
