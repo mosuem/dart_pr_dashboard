@@ -262,6 +262,8 @@ class ReportWidget extends StatelessWidget {
     );
   }
 
+  /// As the entries are saved by number of months since timestamp, and we want
+  /// to show them in reversed order to be chronologically in the correct one.
   Map<Month, T> sortReversed<T>(Map<Month, T> map) =>
       Map.fromEntries(map.entries.sortedBy<num>((e) => e.key).reversed);
 
