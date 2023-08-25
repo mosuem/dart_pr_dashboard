@@ -343,17 +343,17 @@ class ReportWidget extends StatelessWidget {
       fontWeight: FontWeight.bold,
       fontSize: 16,
     );
-    final monthValue = value.toInt();
-    final Widget text = Text(
-      Intl()
-          .datetimeFormat(const DateTimeFormatOptions(month: MonthStyle.short))
-          .format(
-              DateTime(DateTime.now().year, DateTime.now().month - monthValue)),
-      style: style,
-    );
+    final datetimeFormatter = Intl()
+        .datetimeFormat(const DateTimeFormatOptions(month: MonthStyle.short));
     return SideTitleWidget(
       axisSide: meta.axisSide,
-      child: text,
+      child: Text(
+        datetimeFormatter.format(DateTime(
+          DateTime.now().year,
+          DateTime.now().month - value.toInt(),
+        )),
+        style: style,
+      ),
     );
   }
 
