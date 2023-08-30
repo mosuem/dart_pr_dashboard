@@ -97,22 +97,28 @@ class _MyHomePageState extends State<MyHomePage>
             },
           ),
           const SizedBox.square(dimension: 16),
-          IconButton(
-            icon: const Icon(Icons.report),
-            onPressed: () async {
-              Navigator.push<void>(
-                context,
-                MaterialPageRoute<void>(
-                  builder: (BuildContext context) => ReportPage(
-                    issues: widget.appModel.issues,
-                    pullrequests: widget.appModel.pullrequests,
-                    statistics: widget.appModel.statistics,
-                    googlers: widget.appModel.googlers,
-                  ),
-                ),
-              );
-            },
-          ),
+          ValueListenableBuilder<bool>(
+              valueListenable: widget.appModel.busy,
+              builder: (BuildContext context, bool busy, _) {
+                return IconButton(
+                  icon: const Icon(Icons.report),
+                  onPressed: busy
+                      ? null
+                      : () async {
+                          Navigator.push<void>(
+                            context,
+                            MaterialPageRoute<void>(
+                              builder: (BuildContext context) => ReportPage(
+                                issues: widget.appModel.issues,
+                                pullrequests: widget.appModel.pullrequests,
+                                statistics: widget.appModel.statistics,
+                                googlers: widget.appModel.googlers,
+                              ),
+                            ),
+                          );
+                        },
+                );
+              }),
           const SizedBox.square(dimension: 16),
           ValueListenableBuilder<bool>(
             valueListenable: darkModeSwitch,
