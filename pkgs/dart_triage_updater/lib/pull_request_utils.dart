@@ -21,4 +21,12 @@ extension ReviewerAddition on PullRequest {
   bool authorIsGoogler(Set<String> googlers) => googlers.contains(user?.login);
 
   bool get authorIsCopybara => user?.login == 'copybara-service[bot]';
+
+  RepositorySlug? get repoSlug {
+    final url = htmlUrl;
+    if (url == null) return null;
+
+    final pathParts = Uri.parse(url).pathSegments;
+    return RepositorySlug(pathParts[0], pathParts[1]);
+  }
 }
