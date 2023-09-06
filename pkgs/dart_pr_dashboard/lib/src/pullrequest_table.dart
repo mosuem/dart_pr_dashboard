@@ -67,7 +67,7 @@ class _PullRequestTableState extends State<PullRequestTable> {
               grow: 0.5,
               alignment: Alignment.topLeft,
               transformFunction: (PullRequest pr) =>
-                  pr.base?.repo?.slug().fullName ?? '',
+                  pr.repoSlug?.fullName ?? '',
               styleFunction: rowStyle,
             ),
             VTableColumn(
