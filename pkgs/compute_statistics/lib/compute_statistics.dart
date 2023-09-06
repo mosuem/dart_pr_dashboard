@@ -171,7 +171,4 @@ class ComputeStatistics {
   }
 }
 
-isPriorityLabel(int priority, IssueLabel label) {
-  //TODO: Account for different types of priority labels
-  return label.name == 'P$priority';
-}
+isPriorityLabel(int priority, IssueLabel label) => label.name == 'P$priority';
