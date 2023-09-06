@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:github/github.dart';
 
+import '../../main.dart';
 import '../../model.dart';
 import '../filter/filter.dart';
 import '../issue_table.dart';
@@ -50,7 +51,11 @@ class _MyHomePageState extends State<MyHomePage>
       });
     }();
 
-    tabController = TabController(vsync: this, length: 2);
+    tabController = TabController(
+      vsync: this,
+      length: 2,
+      initialIndex: 1,
+    );
 
     controller.addListener(() {
       setState(() {
@@ -91,6 +96,18 @@ class _MyHomePageState extends State<MyHomePage>
               );
             },
           ),
+          const SizedBox.square(dimension: 16),
+          ValueListenableBuilder<bool>(
+              valueListenable: widget.appModel.busy,
+              builder: (BuildContext context, bool busy, _) {
+                return IconButton(
+                  icon: const Icon(Icons.health_and_safety_outlined),
+                  onPressed: busy
+                      ? null
+                      : () =>
+                          Navigator.pushNamed<void>(context, MyApp.reportRoute),
+                );
+              }),
           const SizedBox.square(dimension: 16),
           ValueListenableBuilder<bool>(
             valueListenable: darkModeSwitch,

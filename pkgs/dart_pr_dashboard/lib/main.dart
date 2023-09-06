@@ -7,6 +7,7 @@ import 'package:url_strategy/url_strategy.dart';
 
 import 'model.dart';
 import 'src/pages/homepage.dart';
+import 'src/pages/reportpage.dart';
 
 Future<void> main() async {
   setPathUrlStrategy();
@@ -15,6 +16,8 @@ Future<void> main() async {
 }
 
 class MyApp extends StatefulWidget {
+  static const reportRoute = '/report';
+
   final AppModel appModel;
 
   const MyApp({
@@ -59,6 +62,11 @@ class _MyAppState extends State<MyApp> {
         }
 
         return MaterialApp(
+          initialRoute: '/',
+          routes: {
+            '/': (context) => widget,
+            MyApp.reportRoute: (_) => ReportPage(appModel: widget.appModel),
+          },
           title: appName,
           theme: value
               ? ThemeData.dark(useMaterial3: false)

@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:compute_statistics/statistics.dart';
 import 'package:flutter/foundation.dart';
 import 'package:github/github.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -40,6 +41,19 @@ class AppModel {
     }
 
     return _pullrequests!;
+  }
+
+  ValueNotifier<Statistics?>? _statistics;
+  ValueListenable<Statistics?> get statistics {
+    if (_statistics == null) {
+      _statistics = ValueNotifier(null);
+      getCurrentStatistics().listen((event) {
+        _strobeBusy();
+        _statistics!.value = event;
+      });
+    }
+
+    return _statistics!;
   }
 
   final Completer<bool> _googlersAvailable = Completer<bool>();

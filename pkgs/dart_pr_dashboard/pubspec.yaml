@@ -14,7 +14,7 @@ dependencies:
   firebase_core: ^2.9.0
   firebase_database: ^10.1.0
   github: ^9.17.0
-  intl4x: ^0.4.0
+  intl4x: ^0.6.0
   shared_preferences: ^2.1.0
   url_launcher: ^6.1.10
   url_strategy: ^0.2.0
@@ -22,6 +22,9 @@ dependencies:
   collection: ^1.17.2
   dart_triage_updater:
     path: ../dart_triage_updater
+  compute_statistics:
+    path: ../compute_statistics
+  fl_chart: ^0.63.0
 
 dev_dependencies:
   flutter_test:
