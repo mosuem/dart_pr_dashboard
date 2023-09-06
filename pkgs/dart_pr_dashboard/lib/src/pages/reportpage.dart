@@ -4,7 +4,6 @@ import 'package:collection/collection.dart';
 import 'package:compute_statistics/compute_statistics.dart';
 import 'package:compute_statistics/statistics.dart';
 import 'package:fl_chart/fl_chart.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:github/github.dart';
 import 'package:intl4x/datetime_format.dart';
@@ -12,21 +11,13 @@ import 'package:intl4x/intl4x.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:vtable/vtable.dart';
 
+import '../../model.dart';
 import '../issue_table.dart';
 
 class ReportPage extends StatefulWidget {
-  final ValueListenable<List<Issue>> issues;
-  final ValueListenable<List<PullRequest>> pullrequests;
-  final ValueListenable<Statistics?> statistics;
-  final ValueListenable<List<User>> googlers;
+  final AppModel appModel;
 
-  const ReportPage({
-    super.key,
-    required this.issues,
-    required this.pullrequests,
-    required this.statistics,
-    required this.googlers,
-  });
+  const ReportPage({super.key, required this.appModel});
 
   @override
   State<ReportPage> createState() => _ReportPageState();
@@ -36,16 +27,16 @@ class _ReportPageState extends State<ReportPage> {
   @override
   Widget build(BuildContext context) {
     return ValueListenableBuilder(
-      valueListenable: widget.googlers,
+      valueListenable: widget.appModel.googlers,
       builder: (context, googlers, child) {
         return ValueListenableBuilder(
-          valueListenable: widget.issues,
+          valueListenable: widget.appModel.issues,
           builder: (context, issues, child) {
             return ValueListenableBuilder(
-              valueListenable: widget.pullrequests,
+              valueListenable: widget.appModel.pullrequests,
               builder: (context, pullrequests, child) {
                 return ValueListenableBuilder(
-                  valueListenable: widget.statistics,
+                  valueListenable: widget.appModel.statistics,
                   builder: (context, statistics, child) {
                     if (statistics == null) {
                       return const CircularProgressIndicator();

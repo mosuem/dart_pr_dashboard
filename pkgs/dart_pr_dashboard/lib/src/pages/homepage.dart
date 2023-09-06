@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:github/github.dart';
 
+import '../../main.dart';
 import '../../model.dart';
 import '../filter/filter.dart';
 import '../issue_table.dart';
 import '../misc.dart';
 import '../pullrequest_table.dart';
-import 'reportpage.dart';
 
 const presetFilters = [
   (name: 'Unlabeled', filter: r'labels:$^'),
@@ -101,22 +101,11 @@ class _MyHomePageState extends State<MyHomePage>
               valueListenable: widget.appModel.busy,
               builder: (BuildContext context, bool busy, _) {
                 return IconButton(
-                  icon: const Icon(Icons.report),
+                  icon: const Icon(Icons.health_and_safety_outlined),
                   onPressed: busy
                       ? null
-                      : () async {
-                          Navigator.push<void>(
-                            context,
-                            MaterialPageRoute<void>(
-                              builder: (BuildContext context) => ReportPage(
-                                issues: widget.appModel.issues,
-                                pullrequests: widget.appModel.pullrequests,
-                                statistics: widget.appModel.statistics,
-                                googlers: widget.appModel.googlers,
-                              ),
-                            ),
-                          );
-                        },
+                      : () =>
+                          Navigator.pushNamed<void>(context, MyApp.reportRoute),
                 );
               }),
           const SizedBox.square(dimension: 16),
