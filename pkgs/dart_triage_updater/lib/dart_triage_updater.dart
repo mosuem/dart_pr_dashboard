@@ -73,8 +73,8 @@ class TriageUpdater {
     final reviewers = await github.pullRequests
         .listReviews(slug, pr.number!)
         .map((prReview) => prReview.user)
-        // .where((user) => user != null) // Uncomment when https://github.com/SpinlockLabs/github.dart/pull/383 is merged
-        // .map((user) => user!)
+        .where((user) => user != null)
+        .map((user) => user!)
         .toList();
     await wait();
     // Deduplicate reviewers
