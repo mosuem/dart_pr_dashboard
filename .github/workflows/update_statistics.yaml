@@ -3,9 +3,10 @@
 # separate terms of service, privacy policy, and support
 # documentation.
 
-name: Update database
+name: Update statistics
 
 on:
+  workflow_dispatch:
   push:
     paths:
       - pkgs/compute_statistics/**

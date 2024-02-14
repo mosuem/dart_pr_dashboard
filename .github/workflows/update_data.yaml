@@ -3,9 +3,10 @@
 # separate terms of service, privacy policy, and support
 # documentation.
 
-name: Update database
+name: Update data
 
 on:
+  workflow_dispatch:
   push:
     paths:
       - pkgs/dart_triage_updater/**
