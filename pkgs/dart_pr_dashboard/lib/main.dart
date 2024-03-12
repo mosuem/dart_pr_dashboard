@@ -64,7 +64,7 @@ class _MyAppState extends State<MyApp> {
         return MaterialApp(
           initialRoute: '/',
           routes: {
-            '/': (context) => widget,
+            // '/': (context) => widget,
             MyApp.reportRoute: (_) => ReportPage(appModel: widget.appModel),
           },
           title: appName,

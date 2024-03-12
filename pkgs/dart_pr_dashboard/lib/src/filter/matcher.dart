@@ -9,6 +9,11 @@ class RegexMatcher extends SearchMatcher {
 
   @override
   bool hasMatch(String match) => matcher.hasMatch(match);
+
+  @override
+  String toString() {
+    return matcher.pattern;
+  }
 }
 
 class RangeMatcher extends SearchMatcher {
@@ -29,5 +34,5 @@ class Range {
   bool contains(int parse) => min <= parse && parse <= max;
 }
 
-final searchPattern = RegExp(r"([^\s:]+):(?:'(.+?)'|(([^'][^\s]*)))\s?");
+final searchPattern = RegExp(r"([^\s:]+):(?:'(.+?)'|([^'][^\s]*))\s?");
 final rangePattern = RegExp(r'(\d+)-(\d+)');
